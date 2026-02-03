@@ -216,8 +216,10 @@
     </div>
 
     <div id="admin-ui-vote" style="display:none;">
-        <label class="admin-label">投票截止時間</label>
+<label class="admin-label">投票截止時間</label>
         <input type="datetime-local" id="admin-deadline">
+        <label class="admin-label">正式場次預計人數 (選填)</label>
+        <input type="number" id="admin-vote-max" placeholder="例如：12">
         <label class="admin-label">選項數量 (最多10個)</label>
         <select id="admin-vote-count" onchange="renderVoteInputs()">
             <option value="1">1</option><option value="2">2</option><option value="3">3</option>
@@ -362,32 +364,49 @@
     // 2. 修改投票卡片函數 (對應物件格式)
     function createVoteCard(ev, allVotes) {
         const id = ev.event_id;
-        const opts = ev.desc ? ev.desc.split(',') : []; // 投票選項存在 desc 欄位
+        const opts = ev.desc ? ev.desc.split(',') : [];
         const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === String(id)) : [];
         
+        // 格式化截止日期
+        const deadline = new Date(ev.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+    
         let html = `
-            <div class="card" style="border: 2px solid var(--accent);">
+            <div class="card" style="border: 2px solid var(--accent); position: relative;">
                 <div class="badge-vote">🗳️ 意願調查中</div>
                 <div class="card-title">${ev.title}</div>
-                <div style="margin: 15px 0;">`;
+                <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">
+                    ⏱️ 投票截止：${deadline}
+                </div>
+                <div style="background: #fffaf3; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="font-size: 0.8rem; margin: 0 0 8px 0; color: var(--gray);">預計徵集人數：${ev.max} 人</p>
+                    <div style="font-size: 0.9rem; font-weight: 500;">已有 ${evVotes.length} 人參與投票</div>
+                </div>
+                <div style="display: grid; gap: 8px;">`;
     
         opts.forEach(opt => {
             const count = evVotes.filter(v => v[2] === opt).length;
             const percent = evVotes.length ? (count / evVotes.length * 100) : 0;
             html += `
-                <div class="poll-option" onclick="openVote('${id}', '${ev.title}', '${opt}')">
-                    <div class="poll-bar-bg">
-                        <div class="poll-bar-fill" style="width:${percent}%"></div>
-                        <div class="poll-text"><span>📅 ${opt}</span><span>${count} 票</span></div>
+                <div class="poll-option" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
+                     style="cursor:pointer; position:relative; background:#edf2f7; border-radius:8px; overflow:hidden; height:40px;">
+                    <div style="position:absolute; left:0; top:0; height:100%; width:${percent}%; background:#fbd38d; transition:width 0.5s;"></div>
+                    <div style="position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; padding:0 12px; height:100%; font-size:0.9rem;">
+                        <span>📅 ${opt}</span>
+                        <span style="font-weight:700;">${count} 票</span>
                     </div>
                 </div>`;
         });
     
         html += `</div>
-                <p style="font-size:0.75rem; color:var(--gray); text-align:center;">點擊日期選項即可投票</p>
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
+                ${isAdminMode ? `<button class="btn-admin-del" onclick="deleteEvent('${id}')" style="margin-top:15px; width:100%;">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
+    }
+    
+    // 投票點擊觸發
+    function handleVoteClick(id, title, choice) {
+        // 開啟你已經寫好的 vote-overlay
+        openVote(id, title, choice);
     }
     
     // 3. 修改報名卡片函數 (對應物件格式)
@@ -424,8 +443,8 @@
     function openVote(id, title, choice) {
         document.getElementById('vote-event-id').value = id;
         document.getElementById('vote-choice-val').value = choice;
-        document.getElementById('vote-popup-title').innerText = title;
-        document.getElementById('vote-popup-choice').innerText = "您的選擇：" + choice;
+        document.getElementById('vote-popup-title').innerText = "投票意願調查";
+        document.getElementById('vote-popup-choice').innerText = `【${title}】\n您的選擇：${choice}`;
         document.getElementById('vote-overlay').style.display = 'flex';
     }
 
@@ -433,11 +452,10 @@
         const name = document.getElementById('vote-user-name').value.trim();
         if(!name) return alert("請輸入姓名");
         sendData({
-            type: 'register', // 沿用原本後端 register 邏輯，但在 note 或 balls 存入選項
-            eventId: document.getElementById('vote-event-id').value,
+            type: 'vote',      // 這裡一定要改為 vote
+            event_id: document.getElementById('vote-event-id').value,
             name: name,
-            balls: document.getElementById('vote-choice-val').value, // 投票模式下 balls 欄位借用存日期選項
-            note: 'VOTE'
+            choice: document.getElementById('vote-choice-val').value
         });
     }
 
@@ -447,20 +465,20 @@
         if(!title) return alert("請輸入標題");
     
         const commonData = {
-            event_id: 'E' + Date.now(), // 這裡改成 event_id
+            event_id: 'E' + Date.now(),
             title: title,
-            status: mode // 'active' 或 'vote'
+            status: mode,
+            // 無論哪種模式，都讀取 max，預設 0
+            max: parseInt(document.getElementById('admin-max').value) || 0 
         };
     
         if(mode === 'active') {
             const date = document.getElementById('admin-date').value;
-            const max = document.getElementById('admin-max').value;
-            if(!date || !max) return alert("請填寫日期與人數");
+            if(!date) return alert("請填寫日期");
             sendData({ 
                 ...commonData, 
                 type: 'createEvent', 
                 date: date, 
-                max: parseInt(max), 
                 desc: document.getElementById('admin-desc').value 
             });
         } else {
@@ -470,9 +488,8 @@
             sendData({ 
                 ...commonData, 
                 type: 'createEvent', 
-                date: deadline, // 投票截止日存入 Date 欄位
-                max: 0, 
-                desc: opts // 選項存入 Desc 欄位
+                date: deadline, 
+                desc: opts 
             });
         }
     }
@@ -491,20 +508,29 @@
         const name = document.getElementById('reg-name').value.trim();
         const balls = document.getElementById('reg-balls').value;
         if(!name) return alert("請輸入姓名");
-        sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls: parseInt(balls), note: document.getElementById('reg-note').value });
+        sendData({ 
+            type: 'register', 
+            event_id: document.getElementById('reg-event-id').value, // 改為 event_id
+            name: name, 
+            balls: parseInt(balls) || 0, 
+            note: document.getElementById('reg-note').value 
+        });
     }
+    
     function submitCancel() {
         const name = document.getElementById('cancel-name').value.trim();
         if(!name) return alert("請輸入報名姓名");
-        sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name });
+        sendData({ 
+            type: 'cancelRegistration', 
+            event_id: document.getElementById('cancel-event-id').value, // 改為 event_id
+            name: name 
+        });
     }
-    function updateAnn() {
-        const content = document.getElementById('admin-ann-input').value.trim();
-        if(!content) return alert("公告內容不可為空");
-        sendData({ type: 'updateAnnouncement', content });
-    }
+    
     function deleteEvent(id) {
-        if(confirm("確定要刪除嗎？相關紀錄也會同步刪除。")) { sendData({ type: 'deleteEvent', eventId: id }); }
+        if(confirm("確定要刪除嗎？相關紀錄也會同步刪除。")) { 
+            sendData({ type: 'deleteEvent', event_id: id }); // 改為 event_id
+        }
     }
 
     (async () => {

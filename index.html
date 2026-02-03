@@ -63,7 +63,6 @@
         .card-date { font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 8px; }
         .deadline-text { font-size: 0.8rem; color: var(--danger); font-weight: 700; margin-bottom: 12px; }
         
-        /* 投票進度條與 Tooltip */
         .vote-row { margin-bottom: 15px; position: relative; }
         .vote-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
         .vote-bar-bg { background: #edf2f7; height: 24px; border-radius: 8px; overflow: visible; position: relative; cursor: help; }
@@ -78,7 +77,6 @@
         .vote-bar-bg:hover .vote-tooltip { opacity: 1; visibility: visible; }
         .vote-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #2d3748; }
 
-        /* 報名區域 */
         .reg-area { background: #f1f5f9; border-radius: 14px; padding: 12px; margin: 12px 0; max-height: 160px; overflow-y: auto; }
         .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; font-weight: 500; }
         
@@ -103,7 +101,10 @@
 
 <div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer(false)"></div>
 <div id="drawer" class="drawer">
-    <div class="drawer-header"><span>選單</span><button style="background:none; border:none; font-size:1.8rem;" onclick="toggleDrawer(false)">×</button></div>
+    <div class="drawer-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:900;">選單</span>
+        <button style="background:none; border:none; font-size:1.8rem;" onclick="toggleDrawer(false)">×</button>
+    </div>
     <div class="drawer-item" onclick="showInstruction()">📖 使用說明</div>
     <hr style="width:100%; opacity:0.1; margin: 15px 0;">
     <div id="drawer-admin-tools"><div class="drawer-item" onclick="checkAdmin()">⚙️ 管理員登入</div></div>
@@ -117,12 +118,12 @@
     <div class="section-title">🔥 即將進行的練習</div>
     <div id="event-list" class="event-grid"></div>
 
-    <div class="section-title" style="color:var(--gray); border-color:var(--gray); opacity: 0.6;">⌛ 歷史場次</div>
+    <div class="section-title" style="color:var(--gray); border-color:var(--gray); opacity: 0.6;">⌛ 歷史場次 (Archive)</div>
     <div id="past-list" class="event-grid"></div>
 </div>
 
 <div id="reg-overlay" class="overlay">
-    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee;" onclick="closeOverlay()">← 返回</button>
+    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee; cursor:pointer;" onclick="closeOverlay()">← 返回</button>
     <h2 id="reg-title" style="font-weight:900;">報名</h2>
     <input type="hidden" id="reg-event-id">
     <input type="text" id="reg-name" placeholder="你的姓名">
@@ -132,7 +133,7 @@
 </div>
 
 <div id="cancel-overlay" class="overlay">
-    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee;" onclick="closeOverlay()">← 返回</button>
+    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee; cursor:pointer;" onclick="closeOverlay()">← 返回</button>
     <h2 style="font-weight:900;">取消紀錄</h2>
     <p style="color:var(--gray); font-size:0.9rem; margin-bottom:15px;">請輸入報名/投票時使用的完整姓名</p>
     <input type="hidden" id="cancel-event-id">
@@ -141,7 +142,7 @@
 </div>
 
 <div id="admin-overlay" class="overlay">
-    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee;" onclick="closeOverlay()">← 返回</button>
+    <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee; cursor:pointer;" onclick="closeOverlay()">← 返回</button>
     <h3 style="font-weight:900;">📢 更新公告</h3>
     <textarea id="admin-ann-input" rows="2" placeholder="更新首頁公告..."></textarea>
     <button class="btn btn-accent" onclick="updateAnn()">發布公告</button>
@@ -152,7 +153,7 @@
     </label>
     <div id="admin-date-box"><input type="date" id="admin-date"></div>
     <div id="admin-deadline-box" style="display:none;">
-        <p style="font-size:0.8rem; color:var(--danger); font-weight:700; margin-bottom:4px;">截止時間：</p>
+        <p style="font-size:0.8rem; color:var(--danger); font-weight:700; margin-bottom:4px;">投票截止時間 (台灣時間)：</p>
         <input type="datetime-local" id="admin-deadline">
     </div>
     <input type="text" id="admin-title" placeholder="活動名稱">
@@ -170,60 +171,72 @@
     // --- 初始化與資料讀取 ---
     async function fetchData() {
         try {
-            const resp = await fetch(GAS_URL);
+            // 加入隨機參數防止快取
+            const resp = await fetch(GAS_URL + "?t=" + Date.now());
             const data = await resp.json();
             cachedEvents = [...data.events, ...data.pastEvents];
             document.getElementById('announcement-text').innerText = "📢 公告：" + data.announcement;
             renderAll(data);
             document.getElementById('loading-overlay').style.display = 'none';
-        } catch (e) { alert("系統載入失敗，請稍後再試"); }
+        } catch (e) { 
+            console.error(e);
+            alert("系統載入失敗，請確認網路或重新整理網頁"); 
+        }
     }
 
     function renderAll(data) {
         const activeList = document.getElementById('event-list');
         const pastList = document.getElementById('past-list');
-        activeList.innerHTML = data.events.length ? data.events.map(ev => createCard(ev, data.regs, false)).join('') : "<p style='padding:20px; color:var(--gray);'>目前無活動</p>";
-        pastList.innerHTML = data.pastEvents.length ? data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : "";
+        
+        activeList.innerHTML = data.events.length ? 
+            data.events.map(ev => createCard(ev, data.regs, false)).join('') : 
+            "<p style='padding:20px; color:var(--gray); grid-column: 1/-1; text-align:center;'>目前尚無即將進行的練習</p>";
+        
+        pastList.innerHTML = data.pastEvents.length ? 
+            data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : 
+            "<p style='padding:20px; color:var(--gray); grid-column: 1/-1; text-align:center;'>尚無歷史紀錄</p>";
     }
 
     // --- 核心繪製卡片 ---
     function createCard(ev, allRegs, isPast) {
         const [id, dateStr, title, max, desc, , isVote, deadline] = ev;
         const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
-        const realIsVote = (isVote === true || isVote === "true");
+        
+        // 強制轉換布林值判斷 (關鍵)
+        const realIsVote = (String(isVote).toUpperCase() === "TRUE" || isVote === true);
         
         let contentHtml = "";
 
         if (realIsVote) {
-            // 投票模式
+            // 【投票模式】
             const options = String(dateStr).split(',').map(o => o.trim());
-            const displayDeadline = deadline ? deadline.replace('T', ' ') : '未設定';
-            contentHtml = `<div class="deadline-text">投票截止：${displayDeadline}</div>`;
+            const displayDeadline = deadline ? String(deadline).replace('T', ' ').substring(0, 16) : '未設定';
+            
+            contentHtml = `<div class="deadline-text">🗳️ 投票截止：${displayDeadline}</div>`;
             
             options.forEach(opt => {
-                // 修正：從合併後的資料中精確過濾投票選項
                 const voters = eventRegs.filter(r => String(r[2]).trim() === opt).map(r => r[1]);
                 const count = voters.length;
-                const percent = Math.min((count / max) * 100, 100);
+                const percent = Math.min((count / (max || 1)) * 100, 100);
                 
                 contentHtml += `
                     <div class="vote-row">
                         <div class="vote-info"><span>📅 ${opt}</span><span>${count} 票</span></div>
                         <div class="vote-bar-bg">
-                            <div class="vote-bar-fill" style="width: ${percent}%"></div>
-                            <div class="vote-tooltip">${voters.length > 0 ? voters.join(', ') : '尚無投票'}</div>
+                            <div class="vote-bar-fill" style="width: ${percent}%;"></div>
+                            <div class="vote-tooltip">${voters.length > 0 ? '名單: ' + voters.join(', ') : '尚未有人投票'}</div>
                         </div>
                     </div>`;
             });
         } else {
-            // 報名模式
+            // 【報名模式】
             const d = new Date(dateStr);
             const formattedDate = isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
             const count = eventRegs.length;
-            const progress = Math.min((count / max) * 100, 100);
+            const progress = Math.min((count / (max || 1)) * 100, 100);
 
             contentHtml = `
-                <div class="card-date">📅 ${formattedDate}</div>
+                <div class="card-date">📅 日期：${formattedDate}</div>
                 <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>報名進度</span><span>${count} / ${max} 人</span>
                 </div>
@@ -236,14 +249,14 @@
         }
 
         return `
-            <div class="card">
-                ${realIsVote ? `<div class="vote-badge">🗳️ 投票模式</div>` : ''}
+            <div class="card" style="${isPast ? 'opacity: 0.7; filter: grayscale(0.5);' : ''}">
+                ${realIsVote ? `<div class="vote-badge">🗳️ 投票中</div>` : (isPast ? `<div class="vote-badge" style="background:var(--gray)">已封存</div>` : `<div class="vote-badge" style="background:var(--success)">報名中</div>`)}
                 <div class="card-title">${title}</div>
                 <div class="card-desc">${desc}</div>
                 ${contentHtml}
                 ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}')">${realIsVote ? '參與投票' : '立即報名'}</button>`}
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除場次</button>` : ''}
-                ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">取消${realIsVote?'投票':'報名'}</p>` : ''}
+                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除活動</button>` : ''}
+                ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">取消登記</p>` : ''}
             </div>`;
     }
 
@@ -251,7 +264,7 @@
     function openReg(id) {
         const ev = cachedEvents.find(e => String(e[0]) === String(id));
         if(!ev) return;
-        const realIsVote = (ev[6] === true || ev[6] === "true");
+        const realIsVote = (String(ev[6]).toUpperCase() === "TRUE" || ev[6] === true);
         
         document.getElementById('reg-overlay').style.display = 'flex';
         document.getElementById('reg-event-id').value = id;
@@ -260,7 +273,7 @@
         const dynamicArea = document.getElementById('reg-input-dynamic');
         if(realIsVote) {
             const options = String(ev[1]).split(',').map(s => s.trim());
-            let html = `<p style="font-size:0.85rem; font-weight:700; margin-bottom:5px;">請選擇您可以出席的日期：</p><select id="reg-balls">`;
+            let html = `<p style="font-size:0.85rem; font-weight:700; margin-bottom:5px;">請選擇可出席日期：</p><select id="reg-balls">`;
             options.forEach(o => html += `<option value="${o}">${o}</option>`);
             html += `</select>`;
             dynamicArea.innerHTML = html;
@@ -284,7 +297,7 @@
     function updateAdminUI() {
         const isVote = document.getElementById('admin-is-vote').checked;
         document.getElementById('admin-date-box').innerHTML = isVote ? 
-            `<input type="text" id="admin-date" placeholder="輸入日期選項 (用逗號隔開, 如: 02/10, 02/12)">` : 
+            `<input type="text" id="admin-date" placeholder="日期選項 (用逗號隔開, 如: 02/10, 02/12)">` : 
             `<input type="date" id="admin-date">`;
         document.getElementById('admin-deadline-box').style.display = isVote ? 'block' : 'none';
     }
@@ -302,14 +315,17 @@
                     isAdminMode = true; sessionStorage.setItem('admin_pwd', currentAdminPwd);
                     updateUIForAdmin(); showCreate(); document.getElementById('loading-overlay').style.display = 'none';
                 } else { location.reload(); }
-            } else { alert(result.message); document.getElementById('loading-overlay').style.display = 'none'; }
-        } catch (e) { location.reload(); }
+            } else { alert(result.message || "提交失敗"); document.getElementById('loading-overlay').style.display = 'none'; }
+        } catch (e) { 
+            console.error(e);
+            location.reload(); 
+        }
     }
 
     function submitRegistration() {
         const name = document.getElementById('reg-name').value.trim();
         const balls = document.getElementById('reg-balls').value;
-        if(!name || balls==="") return alert("請完整填寫姓名與內容");
+        if(!name || balls==="") return alert("請填寫姓名與報名內容");
         sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value });
     }
     
@@ -325,18 +341,19 @@
         const title = document.getElementById('admin-title').value;
         const max = document.getElementById('admin-max').value;
         const deadline = document.getElementById('admin-deadline').value;
-        if(!date || !title || !max) return alert("資訊填寫不完整");
+        if(!date || !title || !max) return alert("必填資訊不完整");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value, isVote, deadline }); 
     }
 
     function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }); }
-    function deleteEvent(id) { if(confirm("確定刪除此活動？相關報名紀錄也會一併消失。")) sendData({ type: 'deleteEvent', eventId: id }); }
+    function deleteEvent(id) { if(confirm("確定刪除此活動？歷史報名紀錄也會一併消失。")) sendData({ type: 'deleteEvent', eventId: id }); }
 
     // --- 管理員權限 ---
     function checkAdmin() { 
         toggleDrawer(false);
         if(isAdminMode) return showCreate();
-        const p = prompt("請輸入管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
+        const p = prompt("請輸入管理密碼"); 
+        if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
     }
     function updateUIForAdmin() { 
         document.getElementById('drawer-admin-tools').innerHTML = `
@@ -348,15 +365,19 @@
     function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; }
     function showInstruction() {
         toggleDrawer(false);
-        alert("【系統說明】\n1. 投票模式：請選擇您可以出席的時間，滑鼠移到進度條上可查看該日期已投票的名單。\n2. 報名模式：填寫姓名與球數即可完成報名。\n3. 系統結算：投票截止後將選出最高票日期，並自動清空投票紀錄，轉換為正式報名場次。");
+        alert("【使用指南】\n1. 報名：填寫姓名與球數即可。\n2. 投票：若場次顯示「投票中」，可選擇您有空的日期。\n3. 自動結算：當投票截止後，系統會選出最高票日期並自動轉為正式報名場次，原本的投票記錄會清空並存檔，請大家改為正式報名。");
     }
 
-    // --- 啟動 ---
+    // --- 啟動自執行 ---
     (async () => {
         if (currentAdminPwd) {
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
-                const r = await res.json(); if (r.status === "success") { isAdminMode = true; updateUIForAdmin(); }
+                const r = await res.json(); 
+                if (r.status === "success") { 
+                    isAdminMode = true; 
+                    updateUIForAdmin(); 
+                }
             } catch(e) {}
         }
         fetchData();

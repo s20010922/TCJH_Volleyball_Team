@@ -78,7 +78,7 @@
         
         .vote-badge { 
             position: absolute; top: 20px; right: 20px; 
-            background: var(--danger); color: white; padding: 4px 10px; 
+            background: #6b46c1; color: white; padding: 4px 10px; 
             border-radius: 10px; font-size: 0.75rem; font-weight: 800;
         }
 
@@ -120,7 +120,6 @@
 
 <div class="app-container">
     <div class="announcement-card">
-        <div class="announcement-header">🏐 公告與守則 🏐</div>
         <div id="announcement-text" style="font-size:1rem; line-height: 1.6;">...</div>
     </div>
 
@@ -134,28 +133,23 @@
 <div id="admin-overlay" class="overlay">
     <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; background:#eee;" onclick="closeOverlay()">← 返回</button>
     <h3 style="font-weight:900;">📢 更新公告</h3>
-    <textarea id="admin-ann-input" rows="2"></textarea>
+    <textarea id="admin-ann-input" rows="2" placeholder="輸入公告內容..."></textarea>
     <button class="btn btn-accent" onclick="updateAnn()">發布新公告</button>
-    
     <hr style="margin:25px 0; opacity:0.1;">
-    
     <h3 style="font-weight:900;">🆕 新增場次 / 投票</h3>
     <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px; font-weight:700; color:var(--secondary);">
         <input type="checkbox" id="admin-is-vote" style="width:20px; height:20px;" onchange="updateAdminUI()"> 開啟投票模式
     </label>
-    
     <div id="admin-date-box">
         <input type="date" id="admin-date">
     </div>
-    
     <div id="admin-deadline-box" style="display:none;">
         <p style="font-size:0.8rem; color:var(--danger); font-weight:700; margin-bottom:4px;">投票截止時間：</p>
         <input type="datetime-local" id="admin-deadline">
     </div>
-
     <input type="text" id="admin-title" placeholder="場次名稱">
     <input type="number" id="admin-max" placeholder="人數上限">
-    <textarea id="admin-desc" rows="3" placeholder="練習菜單或投票說明"></textarea>
+    <textarea id="admin-desc" rows="3" placeholder="內容說明"></textarea>
     <button class="btn btn-accent" id="admin-post-btn" onclick="addNewEvent()">發布場次</button>
 </div>
 
@@ -163,13 +157,8 @@
     <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; background:#eee;" onclick="closeOverlay()">← 返回</button>
     <h2 id="reg-title" style="font-weight:900;">報名</h2>
     <input type="hidden" id="reg-event-id">
-    <input type="hidden" id="reg-mode">
     <input type="text" id="reg-name" placeholder="你的姓名">
-    
-    <div id="reg-input-dynamic">
-        <input type="number" id="reg-balls" placeholder="攜帶球數">
-    </div>
-    
+    <div id="reg-input-dynamic"></div>
     <textarea id="reg-note" rows="3" placeholder="備註"></textarea>
     <button class="btn btn-accent" onclick="submitRegistration()">確認提交</button>
 </div>
@@ -178,7 +167,7 @@
     <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; background:#eee;" onclick="closeOverlay()">← 返回</button>
     <h2 style="font-weight:900;">取消報名</h2>
     <input type="hidden" id="cancel-event-id">
-    <input type="text" id="cancel-name" placeholder="請輸入報名姓名">
+    <input type="text" id="cancel-name" placeholder="請輸入原報名姓名">
     <button class="btn" style="background:var(--danger); color:white;" onclick="submitCancel()">確認取消</button>
 </div>
 
@@ -191,7 +180,7 @@
     function updateAdminUI() {
         const isVote = document.getElementById('admin-is-vote').checked;
         document.getElementById('admin-date-box').innerHTML = isVote ? 
-            `<input type="text" id="admin-date" placeholder="輸入候選日期 (如: 02/10, 02/12)">` : 
+            `<input type="text" id="admin-date" placeholder="輸入日期選項 (用逗號隔開, 如: 02/10, 02/12)">` : 
             `<input type="date" id="admin-date">`;
         document.getElementById('admin-deadline-box').style.display = isVote ? 'block' : 'none';
         document.getElementById('admin-post-btn').innerText = isVote ? '發起投票' : '發布場次';
@@ -204,7 +193,7 @@
 
     function showInstruction() {
         toggleDrawer(false);
-        alert("【使用說明】\n1. 報名場次：填寫姓名與球數即可。\n2. 投票場次：請在截止日前選擇你可以出席的時間。\n3. 系統結算：投票截止後，系統會自動轉為正式場次，屆時請大家再重新報名填寫球數。");
+        alert("【使用說明】\n1. 報名場次：填寫姓名與球數即可。\n2. 投票場次：請在截止日前記名選擇日期。\n3. 自動轉換：截止時間一到，系統自動選出最高票日期並清空投票紀錄，請大家屆時進去補填正式報名（球數）。");
     }
 
     async function fetchData() {
@@ -212,7 +201,7 @@
             const resp = await fetch(GAS_URL);
             const data = await resp.json();
             cachedEvents = [...data.events, ...data.pastEvents];
-            document.getElementById('announcement-text').innerText = data.announcement;
+            document.getElementById('announcement-text').innerText = "📢 公告：" + data.announcement;
             renderAll(data);
             document.getElementById('loading-overlay').style.display = 'none';
         } catch (e) { alert("連線失敗"); }
@@ -226,15 +215,19 @@
     }
 
     function createCard(ev, allRegs, isPast) {
-        // [id, date, title, max, desc, status, isVote, deadline]
         const [id, date, title, max, desc, , isVote, deadline] = ev;
         const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
         const count = eventRegs.length;
         const realIsVote = (isVote === true || isVote === "true");
         
-        const totalBalls = realIsVote ? '-' : eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
-        const progress = Math.min((count / max) * 100, 100);
-        const dateStr = realIsVote ? '待投票決定' : new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+        // 渲染日期字串
+        let dateStr = "";
+        if (realIsVote) {
+            dateStr = "日期投票中";
+        } else {
+            const d = new Date(date);
+            dateStr = isNaN(d.getTime()) ? date : d.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+        }
 
         return `
             <div class="card ${isPast ? 'card-past' : ''}">
@@ -244,18 +237,17 @@
                 ${realIsVote ? `<div class="deadline-text">投票截止時間：${deadline.replace('T', ' ')}</div>` : ''}
                 <div class="card-desc">${desc}</div>
                 <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span>${realIsVote ? '投票人數' : '報名進度'}</span>
+                    <span>${realIsVote ? '已投票人數' : '報名進度'}</span>
                     <span>${count} / ${max} 人</span>
                 </div>
                 <div style="background:#edf2f7; height:8px; border-radius:4px; margin-bottom:10px; overflow:hidden;">
-                    <div style="width:${progress}%; height:100%; background:${count>=max?'var(--danger)':'var(--secondary)'}; transition: width 0.5s;"></div>
+                    <div style="width:${Math.min((count/max)*100, 100)}%; height:100%; background:${count>=max?'var(--danger)':'var(--secondary)'}; transition: 0.5s;"></div>
                 </div>
-                ${realIsVote ? '' : `<div style="background:#ebf8ff; color:var(--secondary); padding:6px 12px; border-radius:10px; font-size:0.85rem; font-weight:800; border:1px solid #bee3f8; margin-bottom:10px;">🏐 當前全隊總球數：${totalBalls}</div>`}
                 <div class="reg-area">
                     ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary); font-weight:700;">${realIsVote ? r[2] : r[2]+' 球'}</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚無紀錄</div>'}
                 </div>
                 ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}')">${realIsVote ? '我要投票' : '立即報名'}</button>`}
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除</button>` : ''}
+                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除場次</button>` : ''}
                 ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">取消${realIsVote?'投票':'報名'}</p>` : ''}
             </div>`;
     }
@@ -267,17 +259,18 @@
         
         document.getElementById('reg-overlay').style.display = 'flex';
         document.getElementById('reg-event-id').value = id;
-        document.getElementById('reg-mode').value = realIsVote ? "vote" : "reg";
-        document.getElementById('reg-title').innerText = realIsVote ? "參與投票" : "活動報名";
+        document.getElementById('reg-title').innerText = realIsVote ? "日期投票" : "正式報名";
 
         const dynamicArea = document.getElementById('reg-input-dynamic');
         if(realIsVote) {
-            const options = ev[1].split(',').map(s => s.trim());
+            // 投票模式：生成下拉選單
+            const options = String(ev[1]).split(',').map(s => s.trim());
             let html = `<p style="font-size:0.85rem; font-weight:700; margin-bottom:5px;">請選擇合適日期：</p><select id="reg-balls">`;
             options.forEach(o => html += `<option value="${o}">${o}</option>`);
             html += `</select>`;
             dynamicArea.innerHTML = html;
         } else {
+            // 報名模式：輸入球數
             dynamicArea.innerHTML = `<input type="number" id="reg-balls" placeholder="攜帶球數">`;
         }
     }
@@ -293,7 +286,10 @@
                     isAdminMode = true; sessionStorage.setItem('admin_pwd', currentAdminPwd);
                     updateUIForAdmin(); showCreate(); document.getElementById('loading-overlay').style.display = 'none';
                 } else { location.reload(); }
-            } else { alert(result.message); document.getElementById('loading-overlay').style.display = 'none'; }
+            } else { 
+                alert(result.message); 
+                document.getElementById('loading-overlay').style.display = 'none'; 
+            }
         } catch (e) { location.reload(); }
     }
 
@@ -305,7 +301,7 @@
 
     function updateUIForAdmin() { 
         document.getElementById('drawer-admin-tools').innerHTML = `
-            <div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 進入管理模式</div>
+            <div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 管理員後台</div>
             <div class="drawer-item" onclick="logout()">🚪 登出</div>
         `;
     }
@@ -315,14 +311,14 @@
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
     
     function submitRegistration() {
-        const name = document.getElementById('reg-name').value;
+        const name = document.getElementById('reg-name').value.trim();
         const balls = document.getElementById('reg-balls').value;
-        if(!name || balls==="") return alert("請完整填寫姓名與選項");
+        if(!name || balls==="") return alert("請填寫姓名與內容");
         sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value });
     }
     
     function submitCancel() {
-        const name = document.getElementById('cancel-name').value;
+        const name = document.getElementById('cancel-name').value.trim();
         if(!name) return alert("請輸入姓名");
         sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name });
     }
@@ -339,7 +335,7 @@
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value, isVote, deadline }); 
     }
     
-    function deleteEvent(id) { if(confirm("確定刪除？")) sendData({ type: 'deleteEvent', eventId: id }); }
+    function deleteEvent(id) { if(confirm("確定刪除此活動？相關報名資料也會消失。")) sendData({ type: 'deleteEvent', eventId: id }); }
 
     (async () => {
         if (currentAdminPwd) {

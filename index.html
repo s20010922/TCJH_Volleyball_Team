@@ -25,7 +25,6 @@
             position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
 
-        /* 閃爍動畫 Logo */
         .header-logo {
             font-weight: 900; font-size: 1.15rem; letter-spacing: 1.5px; cursor: pointer;
             display: flex; align-items: center; gap: 8px;
@@ -49,7 +48,6 @@
 
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
         
-        /* 加載動畫 */
         #loading-overlay { position: fixed; inset: 0; background: var(--white); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; }
         .vball-loader { font-size: 3.5rem; animation: spin 1.2s infinite linear; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -60,7 +58,6 @@
         .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .card { background: var(--white); border-radius: 24px; padding: 22px; border: 1px solid #edf2f7; box-shadow: 0 6px 15px rgba(0,0,0,0.04); position: relative; }
         
-        /* 狀態標籤 */
         .status-badge { position: absolute; top: 20px; right: 20px; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 800; color: white; }
         .badge-vote { background: var(--purple); }
         .badge-active { background: var(--success); }
@@ -71,7 +68,6 @@
         .card-date { font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 8px; }
         .deadline-text { font-size: 0.8rem; color: var(--danger); font-weight: 700; margin-bottom: 12px; }
         
-        /* 投票專用樣式 */
         .vote-row { margin-bottom: 15px; position: relative; }
         .vote-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
         .vote-bar-bg { background: #edf2f7; height: 24px; border-radius: 8px; overflow: visible; position: relative; cursor: help; }
@@ -115,7 +111,9 @@
     </div>
     <div class="drawer-item" onclick="showInstruction()">📖 使用說明</div>
     <hr style="width:100%; opacity:0.1; margin: 15px 0;">
-    <div id="drawer-admin-tools"><div class="drawer-item" onclick="checkAdmin()">⚙️ 管理員登入</div></div>
+    <div id="drawer-admin-tools">
+        <div class="drawer-item" onclick="checkAdmin()">⚙️ 管理員登入</div>
+    </div>
 </div>
 
 <div class="app-container">
@@ -155,14 +153,22 @@
     <input type="number" id="admin-max" placeholder="人數上限">
     <textarea id="admin-desc" rows="3" placeholder="詳細說明"></textarea>
     <button class="btn btn-accent" onclick="addNewEvent()">發布活動</button>
+    <hr style="width:100%; margin: 20px 0; opacity: 0.2;">
+    <h3 style="font-weight:900;">📢 更新公告</h3>
+    <textarea id="admin-announcement-input" rows="2" placeholder="輸入新公告內容..."></textarea>
+    <button class="btn" style="background:#edf2f7;" onclick="updateAnnouncement()">更新公告</button>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; // 👈 請更換為你的部署網址
+    // ⚠️ 請務必確認此網址為「新版本」部署網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
+    
     let isAdminMode = false;
+    let currentAdminPwd = ""; // 暫存密碼供後續發布使用
     let cachedEvents = [];
     let cachedRegs = [];
 
+    // 1. 初始化讀取
     async function fetchData() {
         try {
             const resp = await fetch(GAS_URL + "?t=" + Date.now());
@@ -172,18 +178,88 @@
             document.getElementById('announcement-text').innerText = "📢 公告：" + data.announcement;
             renderAll(data);
             document.getElementById('loading-overlay').style.display = 'none';
-        } catch (e) { alert("讀取失敗"); }
+        } catch (e) { alert("讀取失敗，請檢查 GAS 部署是否正確設定為「任何人」"); }
     }
 
     function renderAll(data) {
         const activeList = document.getElementById('event-list');
         const pastList = document.getElementById('past-list');
-        
         activeList.innerHTML = data.events.map(ev => createCard(ev, data.regs)).join('');
         pastList.innerHTML = data.pastEvents.map(ev => createArchiveCard(ev)).join('');
     }
 
-    // 核心卡片繪製：針對 vote 與 active
+    // 2. 管理員登入驗證
+    async function checkAdmin() {
+        const pwd = prompt("請輸入管理員密碼：");
+        if (!pwd) return;
+
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const resp = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ type: 'verify', adminPassword: pwd })
+            });
+            const result = await resp.json();
+
+            if (result.status === "success") {
+                currentAdminPwd = pwd;
+                isAdminMode = true;
+                toggleDrawer(false);
+                document.getElementById('admin-overlay').style.display = 'flex';
+                updateAdminUI();
+            } else {
+                alert("密碼錯誤！");
+            }
+        } catch (e) {
+            alert("驗證失敗");
+        } finally {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    }
+
+    // 3. 發布活動
+    async function addNewEvent() {
+        const payload = {
+            type: 'createEvent',
+            adminPassword: currentAdminPwd,
+            id: "EVT" + Date.now(),
+            isVote: document.getElementById('admin-is-vote').checked,
+            date: document.getElementById('admin-date').value,
+            title: document.getElementById('admin-title').value,
+            max: document.getElementById('admin-max').value,
+            desc: document.getElementById('admin-desc').value,
+            deadline: document.getElementById('admin-deadline').value
+        };
+
+        if (!payload.date || !payload.title) return alert("日期與標題不能為空");
+
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if (result.status === "success") {
+                alert("發布成功！");
+                location.reload();
+            } else {
+                alert("錯誤：" + result.message);
+            }
+        } catch (e) { alert("發布失敗"); }
+    }
+
+    // 4. 更新公告
+    async function updateAnnouncement() {
+        const content = document.getElementById('admin-announcement-input').value;
+        if(!content) return alert("請輸入內容");
+        
+        document.getElementById('loading-overlay').style.display = 'flex';
+        await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'updateAnnouncement', adminPassword: currentAdminPwd, content: content })
+        });
+        location.reload();
+    }
+
+    // 5. 報名/投票卡片繪製
     function createCard(ev, allRegs) {
         const [id, dateStr, title, max, desc, status, deadline] = ev;
         const isVote = (status === 'vote');
@@ -225,7 +301,6 @@
             </div>`;
     }
 
-    // 歷史卡片繪製：針對 archive 工作表
     function createArchiveCard(ev) {
         const [id, date, names] = ev;
         return `
@@ -242,11 +317,9 @@
         const ev = cachedEvents.find(e => String(e[0]) === String(id));
         if(!ev) return;
         const isVote = (ev[5] === 'vote');
-        
         document.getElementById('reg-overlay').style.display = 'flex';
         document.getElementById('reg-event-id').value = id;
         document.getElementById('reg-title').innerText = isVote ? "參與投票" : "正式報名";
-
         const dynamic = document.getElementById('reg-input-dynamic');
         if(isVote) {
             const options = ev[1].split(',').map(s => s.trim());
@@ -265,7 +338,6 @@
             note: document.getElementById('reg-note').value
         };
         if(!payload.name) return alert("請輸入姓名");
-        
         document.getElementById('loading-overlay').style.display = 'flex';
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
         location.reload();
@@ -274,7 +346,7 @@
     function updateAdminUI() {
         const isVote = document.getElementById('admin-is-vote').checked;
         document.getElementById('admin-date-box').innerHTML = isVote ? 
-            `<input type="text" id="admin-date" placeholder="日期選項 (02/10, 02/12)">` : 
+            `<input type="text" id="admin-date" placeholder="日期選項，用逗號隔開 (02/10, 02/12)">` : 
             `<input type="date" id="admin-date">`;
         document.getElementById('admin-deadline-box').style.display = isVote ? 'block' : 'none';
     }
@@ -284,9 +356,8 @@
         document.getElementById('drawer-overlay').classList.toggle('open', open);
     }
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    function showInstruction() { alert("投票截止後系統會自動統計最高票，並清空紀錄讓大家重新正式報名。"); }
-    
-    // 初始化
+    function showInstruction() { alert("投票截止後系統會自動統計最高票，並清空投票紀錄轉為正式報名場次。"); }
+
     fetchData();
 </script>
 </body>

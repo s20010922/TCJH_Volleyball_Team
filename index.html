@@ -314,6 +314,16 @@
                     showCreate();
                 } else {
                     alert("操作成功！");
+                    const inputs = document.querySelectorAll('input, textarea');
+                    inputs.forEach(input => {
+                        // 排除掉隱藏欄位與管理密碼，其他都清空
+                        if (input.type !== 'hidden' && input.id !== 'adminPassword') {
+                            input.value = "";
+                        }
+                    });
+                    // 特別重設下拉選單 (選回第一個)
+                    const selects = document.querySelectorAll('select');
+                    selects.forEach(s => s.selectedIndex = 0);
                     closeOverlay();
                     await fetchData();
                 }
@@ -499,12 +509,20 @@
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
     
+        // 關鍵修正：根據模式選擇正確的人數輸入框
+        let maxVal = 0;
+        if (mode === 'active') {
+            maxVal = parseInt(document.getElementById('admin-max').value) || 0;
+        } else {
+            // 投票模式下，讀取「正式場次預計人數」這個欄位
+            maxVal = parseInt(document.getElementById('admin-vote-max').value) || 0;
+        }
+    
         const commonData = {
             event_id: 'E' + Date.now(),
             title: title,
             status: mode,
-            // 無論哪種模式，都讀取 max，預設 0
-            max: parseInt(document.getElementById('admin-max').value) || 0 
+            max: maxVal // 確保這裡抓到的是正確的數字
         };
     
         if(mode === 'active') {

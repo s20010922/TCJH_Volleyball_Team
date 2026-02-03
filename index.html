@@ -353,12 +353,11 @@
             activeList.innerHTML = "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
         } else {
             data.events.forEach(ev => {
-                // 確保 event_id 為字串
                 const eid = String(ev.event_id).trim();
                 
                 if (ev.status === 'vote') {
-                    // 這裡傳入 data.votes (這是後端給的完整投票陣列)
-                    activeList.innerHTML += (ev, data.votes);
+                    // 這裡必須明確呼叫 createVoteCard 函數
+                    activeList.innerHTML += createVoteCard(ev, data.votes); 
                 } else if (ev.status === 'active') {
                     activeList.innerHTML += createCard(ev, data.regs, false);
                 } else {

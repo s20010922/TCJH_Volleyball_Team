@@ -368,18 +368,15 @@
     
     // 2. 修改投票卡片函數 (對應物件格式)
     function createVoteCard(ev, allVotes) {
-        const id = ev.event_id;
+        const id = String(ev.event_id); // 強制轉字串避免比對失敗
         const opts = ev.desc ? ev.desc.split(',') : [];
-        // 從所有投票資料中，找出屬於這一個 event_id 的紀錄
-        const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === String(id)) : [];
         
-        // 格式化截止日期與時間 (月/日 時:分)
-        const deadlineDate = new Date(ev.date);
-        const formattedDeadline = deadlineDate.toLocaleDateString('zh-TW', { 
-            month: '2-digit', day: '2-digit', weekday: 'short' 
-        }) + " " + deadlineDate.toLocaleTimeString('zh-TW', { 
-            hour: '2-digit', minute: '2-digit', hour12: false 
-        });
+        // 取得該場次的所有投票
+        const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === id) : [];
+        
+        // 格式化截止時間 (月/日 時:分)
+        const d = new Date(ev.date);
+        const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     
         let html = `
             <div class="card" style="border: 2px solid var(--accent); position: relative;">
@@ -391,23 +388,20 @@
                 <div style="display: grid; gap: 10px;">`;
     
         opts.forEach(opt => {
-            // 關鍵：從紀錄中抓出「投給這個日期」的所有人名
-            // 假設 v[1] 是姓名，v[2] 是選擇的日期字串
-            const votersForThisOpt = evVotes.filter(v => v[2] === opt).map(v => v[1]);
+            const targetOpt = opt.trim();
+            // 抓出選擇該選項的所有人名 (假設 v[1] 是姓名, v[2] 是選項)
+            const voters = evVotes.filter(v => String(v[2]).trim() === targetOpt).map(v => v[1]);
             
             html += `
-                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
+                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOpt}')" 
                      style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
                     <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
-                        📅 ${opt}
+                        📅 ${targetOpt}
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                        ${votersForThisOpt.length > 0 
-                            ? votersForThisOpt.map(name => `
-                                <span style="background:#ebf8ff; color:var(--secondary); padding:3px 10px; border-radius:8px; font-size:0.8rem; font-weight:700; border: 1px solid #bee3f8;">
-                                    ${name}
-                                </span>`).join('')
-                            : '<span style="color:#cbd5e0; font-size:0.75rem; font-weight:500;">目前尚未有人選擇</span>'
+                        ${voters.length > 0 
+                            ? voters.map(name => `<span style="background:#ebf8ff; color:var(--secondary); padding:3px 10px; border-radius:8px; font-size:0.8rem; font-weight:700; border: 1px solid #bee3f8;">${name}</span>`).join('')
+                            : '<span style="color:#cbd5e0; font-size:0.75rem;">無人選擇</span>'
                         }
                     </div>
                 </div>`;

@@ -97,19 +97,32 @@
     let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
 
     async function fetchData() {
-        try {
-            const resp = await fetch(`${GITHUB_URL}?t=${Date.now()}`);
-            if (!resp.ok) throw new Error();
-            const data = await resp.json();
-            document.getElementById('announcement-text').innerText = data.announcement;
-            renderEvents(data.events, data.regs);
-        } catch (e) {
-            const resp = await fetch(GAS_URL);
-            const data = await resp.json();
-            document.getElementById('announcement-text').innerText = data.announcement;
-            renderEvents(data.events, data.regs);
+            // 使用 cache: 'no-store' 或時間戳 t=${Date.now()} 來確保抓到最新 GitHub 資料
+            try {
+                const resp = await fetch(`${GITHUB_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                if (!resp.ok) throw new Error("GitHub 無法讀取");
+                const data = await resp.json();
+                
+                // 檢查資料格式是否正確 (避免抓到空的 JSON)
+                if (!data.events) throw new Error("資料格式不完整");
+                
+                document.getElementById('announcement-text').innerText = data.announcement;
+                renderEvents(data.events, data.regs);
+                console.log("資料來源：GitHub (最新)");
+            } catch (e) {
+                // 如果 GitHub 失敗或延遲，立刻切換到 GAS 直接讀取試算表
+                console.warn("GitHub 讀取失敗或資料未同步，切換至 GAS 備援...");
+                try {
+                    const resp = await fetch(GAS_URL);
+                    const data = await resp.json();
+                    document.getElementById('announcement-text').innerText = data.announcement;
+                    renderEvents(data.events, data.regs);
+                    console.log("資料來源：GAS 備援 (即時)");
+                } catch (err) {
+                    document.getElementById('event-list').innerHTML = "<p>無法載入資料，請檢查網路連線。</p>";
+                }
+            }
         }
-    }
 
     function renderEvents(events, regs) {
         const list = document.getElementById('event-list');

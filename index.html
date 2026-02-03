@@ -10,37 +10,34 @@
             --danger: #e53e3e; --bg: #f7fafc; --white: #ffffff;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--primary); }
+        body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--primary); line-height: 1.5; }
         header { background: var(--primary); color: var(--white); padding: 0 20px; height: 60px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
         
-        /* 骨架屏動畫 */
         @keyframes loading { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 10px; }
 
-        .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 20px; }
         .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; }
-        .announcement-content { font-size: 0.95rem; color: #744210; white-space: pre-wrap; line-height: 1.6; min-height: 30px; }
+        .announcement-content { font-size: 0.95rem; white-space: pre-wrap; }
 
         #event-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .card { background: var(--white); border-radius: 20px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-        .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; white-space: pre-wrap; border-left: 3px solid var(--accent); }
+        .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; border-left: 3px solid var(--accent); white-space: pre-wrap; }
         
         .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
         .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
-        .reg-info { flex-grow: 1; }
-        .reg-note { font-size: 0.75rem; color: #718096; display: block; }
-        .cancel-link { color: var(--danger); font-size: 0.75rem; cursor: pointer; text-decoration: underline; margin-left: 10px; }
+        .cancel-link { color: var(--danger); font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
 
         .progress-bar-bg { background: #edf2f7; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
         .progress-bar-fill { height: 100%; transition: width 0.5s; }
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; }
         .btn-accent { background: var(--accent); color: var(--primary); }
         
         .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
-        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; outline: none; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -51,36 +48,30 @@
 </header>
 
 <div class="app-container">
-    <div id="announcement-area" class="announcement-card">
-        <div class="announcement-title">📢 公告與守則 📢</div>
-        <div id="announcement-text" class="announcement-content">
-            <div class="skeleton" style="height:20px; width:80%; margin-bottom:5px;"></div>
-            <div class="skeleton" style="height:20px; width:60%;"></div>
-        </div>
+    <div class="announcement-card">
+        <div class="announcement-title">📢 公告與守則</div>
+        <div id="announcement-text" class="announcement-content">載入中...</div>
     </div>
-    <h3 style="border-left:5px solid var(--accent); padding-left:10px; margin-bottom:15px;">即將進行的練習</h3>
-    <div id="event-list">
-        <div class="card"><div class="skeleton" style="height:150px;"></div></div>
-        <div class="card"><div class="skeleton" style="height:150px;"></div></div>
-    </div>
+    <h3 style="border-left:5px solid var(--accent); padding-left:10px;">即將進行的練習</h3>
+    <div id="event-list"></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); border:1px solid #ddd; width:80px; background:none; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
-    <h3>📢 更新全隊公告</h3>
+    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
+    <h3>📢 更新公告</h3>
     <textarea id="admin-ann-input" rows="3"></textarea>
     <button class="btn btn-accent" id="btn-ann" onclick="updateAnn()">發布新公告</button>
-    <hr style="margin:30px 0; opacity:0.1;">
+    <hr style="margin:20px 0; opacity:0.1;">
     <h3>🆕 新增場次</h3>
     <input type="date" id="admin-date">
     <input type="text" id="admin-title" placeholder="場次名稱">
     <input type="number" id="admin-max" placeholder="人數上限">
-    <textarea id="admin-desc" rows="4" placeholder="填寫練習菜單"></textarea>
+    <textarea id="admin-desc" rows="4" placeholder="填寫菜單"></textarea>
     <button class="btn btn-accent" id="btn-admin" onclick="addNewEvent()">發布場次</button>
 </div>
 
 <div id="reg-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); border:1px solid #ddd; width:80px; background:none; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
+    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
     <h2 id="reg-title">報名</h2>
     <input type="hidden" id="reg-event-id">
     <input type="text" id="reg-name" placeholder="你的姓名">
@@ -90,51 +81,49 @@
 </div>
 
 <div id="cancel-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); border:1px solid #ddd; width:80px; background:none; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
+    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
     <h2>取消報名</h2>
-    <p style="color:var(--danger); font-size:0.9rem;">* 請核對報名時使用的姓名</p>
     <input type="hidden" id="cancel-event-id">
     <input type="text" id="cancel-name" placeholder="請輸入報名姓名">
-    <textarea id="cancel-reason" rows="3" placeholder="取消緣由"></textarea>
+    <textarea id="cancel-reason" rows="3" placeholder="取消理由"></textarea>
     <button class="btn" style="background:var(--danger); color:white;" id="btn-cancel" onclick="submitCancel()">確認取消</button>
 </div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
+    const GITHUB_URL = "https://raw.githubusercontent.com/s20010922/TCJH_Volleyball_Team/refs/heads/main/data.json";
     
     let isAdminMode = false;
     let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
 
     async function fetchData() {
         try {
-            const resp = await fetch(`${GAS_URL}?t=${Date.now()}`);
+            const resp = await fetch(`${GITHUB_URL}?t=${Date.now()}`);
+            if (!resp.ok) throw new Error();
             const data = await resp.json();
-            document.getElementById('announcement-text').innerText = data.announcement || "目前尚無公告";
-            document.getElementById('admin-ann-input').value = data.announcement || "";
+            document.getElementById('announcement-text').innerText = data.announcement;
             renderEvents(data.events, data.regs);
         } catch (e) {
-            document.getElementById('event-list').innerHTML = "⚠️ 無法載入資料";
+            const resp = await fetch(GAS_URL);
+            const data = await resp.json();
+            document.getElementById('announcement-text').innerText = data.announcement;
+            renderEvents(data.events, data.regs);
         }
     }
 
     function renderEvents(events, regs) {
         const list = document.getElementById('event-list');
-        if (!events || events.length <= 1) { 
-            list.innerHTML = "<p>目前沒有場次。</p>"; 
-            return; 
-        }
+        if (!events || events.length <= 1) { list.innerHTML = "<p>目前沒有場次。</p>"; return; }
         let html = '';
         for (let i = 1; i < events.length; i++) {
             const [id, date, title, max, desc] = events[i];
             const eventRegs = regs ? regs.filter(r => String(r[0]) === String(id)) : [];
             const count = eventRegs.length;
-            const progress = (count / max) * 100;
+            const progress = Math.min((count / max) * 100, 100);
             
             let regItems = eventRegs.map(r => `
                 <div class="reg-item">
-                    <div class="reg-info">
-                        <b>👤 ${r[1]}</b> <span class="reg-note">🏐 ${r[2]}球 ${r[3]?'| '+r[3]:''}</span>
-                    </div>
+                    <span><b>👤 ${r[1]}</b> (${r[2]}球)</span>
                     <span class="cancel-link" onclick="openCancel('${id}')">取消</span>
                 </div>`).join('');
 
@@ -146,7 +135,7 @@
                 <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
                 <div class="reg-area">${regItems || '尚未有人報名'}</div>
                 <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
-                ${isAdminMode ? `<button style="margin-top:10px; color:var(--danger); cursor:pointer; background:none; border:none; width:100%;" onclick="deleteEvent('${id}')">🗑️ 刪除場次</button>` : ''}
+                ${isAdminMode ? `<button style="margin-top:10px; color:var(--danger); background:none; border:none; width:100%; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除場次</button>` : ''}
             </div>`;
         }
         list.innerHTML = html;
@@ -154,6 +143,7 @@
 
     async function sendData(payload, btnId) {
         const btn = document.getElementById(btnId);
+        const originalText = btn ? btn.innerText : "";
         if (btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
         if (['updateAnnouncement', 'createEvent', 'deleteEvent', 'verify'].includes(payload.type)) {
@@ -171,16 +161,19 @@
                     updateUIForAdmin();
                     showCreate();
                 } else {
-                    alert(result.message);
-                    location.reload();
+                    alert("操作成功！GitHub 同步可能需 1-3 分鐘。");
+                    closeOverlay();
+                    fetchData();
                 }
             } else {
                 alert("❌ " + result.message);
-                if (btn) { btn.innerText = "重新嘗試"; btn.disabled = false; }
             }
         } catch (error) {
-            alert("指令已送出，請刷新頁面確認。");
-            setTimeout(() => location.reload(), 1000);
+            alert("指令已送出，請等候同步。");
+            closeOverlay();
+            fetchData();
+        } finally {
+            if (btn) { btn.innerText = originalText; btn.disabled = false; }
         }
     }
 
@@ -193,38 +186,25 @@
     }
 
     function updateUIForAdmin() {
-        document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button> <button class="btn-sm" onclick="logout()">登出</button>`;
+        document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理</button> <button class="btn-sm" onclick="logout()">登出</button>`;
     }
 
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
     function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    
-    function openReg(id, title) { 
-        document.getElementById('reg-overlay').style.display = 'flex'; 
-        document.getElementById('reg-event-id').value = id; 
-        document.getElementById('reg-title').innerText = title; 
-    }
-
-    function openCancel(eventId) {
-        document.getElementById('cancel-overlay').style.display = 'flex';
-        document.getElementById('cancel-event-id').value = eventId;
-    }
-
+    function openReg(id, title) { document.getElementById('reg-overlay').style.display = 'flex'; document.getElementById('reg-event-id').value = id; document.getElementById('reg-title').innerText = title; }
+    function openCancel(eventId) { document.getElementById('cancel-overlay').style.display = 'flex'; document.getElementById('cancel-event-id').value = eventId; }
     function submitRegistration() {
         const name = document.getElementById('reg-name').value;
         const balls = document.getElementById('reg-balls').value;
         if(!name || balls==="") return alert("請填寫姓名與球數");
         sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value }, "btn-reg");
     }
-
     function submitCancel() {
         const name = document.getElementById('cancel-name').value;
-        const reason = document.getElementById('cancel-reason').value;
-        if(!name || !reason) return alert("請輸入報名姓名與取消理由");
-        sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name, reason }, "btn-cancel");
+        if(!name) return alert("請輸入報名姓名");
+        sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name }, "btn-cancel");
     }
-
     function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }, "btn-ann"); }
     function addNewEvent() { 
         const title = document.getElementById('admin-title').value;
@@ -240,12 +220,8 @@
             try {
                 const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
                 const result = await response.json();
-                if (result.status === "success") {
-                    isAdminMode = true;
-                    updateUIForAdmin();
-                } else {
-                    sessionStorage.removeItem('admin_pwd');
-                }
+                if (result.status === "success") { isAdminMode = true; updateUIForAdmin(); }
+                else { sessionStorage.removeItem('admin_pwd'); }
             } catch(e) {}
         }
         fetchData();

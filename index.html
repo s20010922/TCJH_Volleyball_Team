@@ -15,8 +15,12 @@
         .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
         
+        /* 骨架屏動畫 */
+        @keyframes loading { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 10px; }
+
         .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; display: flex; align-items: center; }
+        .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; }
         .announcement-content { font-size: 0.95rem; color: #744210; white-space: pre-wrap; line-height: 1.6; min-height: 30px; }
 
         #event-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
@@ -25,8 +29,10 @@
         .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; white-space: pre-wrap; border-left: 3px solid var(--accent); }
         
         .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
-        .reg-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e880; }
+        .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+        .reg-info { flex-grow: 1; }
         .reg-note { font-size: 0.75rem; color: #718096; display: block; }
+        .cancel-link { color: var(--danger); font-size: 0.75rem; cursor: pointer; text-decoration: underline; margin-left: 10px; }
 
         .progress-bar-bg { background: #edf2f7; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
         .progress-bar-fill { height: 100%; transition: width 0.5s; }
@@ -47,10 +53,16 @@
 <div class="app-container">
     <div id="announcement-area" class="announcement-card">
         <div class="announcement-title">📢 公告與守則 📢</div>
-        <div id="announcement-text" class="announcement-content">載入中...</div>
+        <div id="announcement-text" class="announcement-content">
+            <div class="skeleton" style="height:20px; width:80%; margin-bottom:5px;"></div>
+            <div class="skeleton" style="height:20px; width:60%;"></div>
+        </div>
     </div>
     <h3 style="border-left:5px solid var(--accent); padding-left:10px; margin-bottom:15px;">即將進行的練習</h3>
-    <div id="event-list">⏳ 正在同步資料...</div>
+    <div id="event-list">
+        <div class="card"><div class="skeleton" style="height:150px;"></div></div>
+        <div class="card"><div class="skeleton" style="height:150px;"></div></div>
+    </div>
 </div>
 
 <div id="admin-overlay" class="overlay">
@@ -77,8 +89,17 @@
     <button class="btn btn-accent" id="btn-reg" onclick="submitRegistration()">確認報名</button>
 </div>
 
+<div id="cancel-overlay" class="overlay">
+    <button class="btn-sm" style="color:var(--primary); border:1px solid #ddd; width:80px; background:none; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
+    <h2>取消報名</h2>
+    <p style="color:var(--danger); font-size:0.9rem;">* 請核對報名時使用的姓名</p>
+    <input type="hidden" id="cancel-event-id">
+    <input type="text" id="cancel-name" placeholder="請輸入報名姓名">
+    <textarea id="cancel-reason" rows="3" placeholder="取消緣由"></textarea>
+    <button class="btn" style="background:var(--danger); color:white;" id="btn-cancel" onclick="submitCancel()">確認取消</button>
+</div>
+
 <script>
-    // 🔗 請務必替換為新的部署網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
     
     let isAdminMode = false;
@@ -111,17 +132,17 @@
             
             let regItems = eventRegs.map(r => `
                 <div class="reg-item">
-                    <div><b>👤 ${r[1]}</b> <span class="reg-note">${r[3]||''}</span></div>
-                    <div style="color:var(--secondary)">🏐 ${r[2]}</div>
+                    <div class="reg-info">
+                        <b>👤 ${r[1]}</b> <span class="reg-note">🏐 ${r[2]}球 ${r[3]?'| '+r[3]:''}</span>
+                    </div>
+                    <span class="cancel-link" onclick="openCancel('${id}')">取消</span>
                 </div>`).join('');
 
             html += `<div class="card">
                 <div class="card-title">${title}</div>
                 <div style="font-size:0.8rem; color:var(--secondary);">📅 ${String(date).split('T')[0]}</div>
                 <div class="card-desc">${desc}</div>
-                <div style="font-size:0.75rem; font-weight:bold; display:flex; justify-content:space-between;">
-                    <span>目前人數 ${count} / ${max}</span>
-                </div>
+                <div style="font-size:0.75rem; font-weight:bold;">目前人數 ${count} / ${max}</div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
                 <div class="reg-area">${regItems || '尚未有人報名'}</div>
                 <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
@@ -131,58 +152,78 @@
         list.innerHTML = html;
     }
 
-    // 🚀 核心：移除 no-cors 模式
     async function sendData(payload, btnId) {
         const btn = document.getElementById(btnId);
-        if (btn) { btn.innerText = "驗證並傳送中..."; btn.disabled = true; }
+        if (btn) { btn.innerText = "處理中..."; btn.disabled = true; }
 
-        const adminActions = ['updateAnnouncement', 'createEvent', 'deleteEvent'];
-        if (adminActions.includes(payload.type)) {
+        if (['updateAnnouncement', 'createEvent', 'deleteEvent', 'verify'].includes(payload.type)) {
             payload.adminPassword = currentAdminPwd;
         }
 
         try {
-            // 由於 GAS 不支援標準 CORS POST，我們透過正常的 fetch 處理
-            // 如果 GAS 回傳成功，這裡會收到 JSON
-            const response = await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
+            const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await response.json();
 
             if (result.status === "success") {
-                alert(result.message);
-                location.reload();
-            } else {
-                alert("❌ 失敗：" + result.message);
-                if (result.message.includes("密碼")) {
-                    sessionStorage.removeItem('admin_pwd');
+                if (payload.type === 'verify') {
+                    isAdminMode = true;
+                    sessionStorage.setItem('admin_pwd', currentAdminPwd);
+                    updateUIForAdmin();
+                    showCreate();
+                } else {
+                    alert(result.message);
                     location.reload();
                 }
+            } else {
+                alert("❌ " + result.message);
+                if (btn) { btn.innerText = "重新嘗試"; btn.disabled = false; }
             }
         } catch (error) {
-            // 如果 GAS 部署環境導致 CORS 報錯，通常資料已送達但瀏覽器攔截回傳
-            console.log("CORS info:", error);
-            alert("指令已送出，請檢查試算表。若未更新請確認密碼是否正確。");
-            setTimeout(()=> location.reload(), 1500);
+            alert("指令已送出，請刷新頁面確認。");
+            setTimeout(() => location.reload(), 1000);
         }
     }
 
-    function checkAdmin() {
+    async function checkAdmin() {
+        if (isAdminMode) return showCreate();
         const pwd = prompt("請輸入管理密碼");
-        if (pwd) {
-            currentAdminPwd = pwd;
-            sessionStorage.setItem('admin_pwd', pwd);
-            isAdminMode = true;
-            document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button> <button class="btn-sm" onclick="logout()">登出</button>`;
-            fetchData();
-        }
+        if (!pwd) return;
+        currentAdminPwd = pwd;
+        await sendData({ type: 'verify' }, "header-tools");
+    }
+
+    function updateUIForAdmin() {
+        document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button> <button class="btn-sm" onclick="logout()">登出</button>`;
     }
 
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
     function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    function openReg(id, title) { document.getElementById('reg-overlay').style.display = 'flex'; document.getElementById('reg-event-id').value = id; document.getElementById('reg-title').innerText = title; }
+    
+    function openReg(id, title) { 
+        document.getElementById('reg-overlay').style.display = 'flex'; 
+        document.getElementById('reg-event-id').value = id; 
+        document.getElementById('reg-title').innerText = title; 
+    }
+
+    function openCancel(eventId) {
+        document.getElementById('cancel-overlay').style.display = 'flex';
+        document.getElementById('cancel-event-id').value = eventId;
+    }
+
+    function submitRegistration() {
+        const name = document.getElementById('reg-name').value;
+        const balls = document.getElementById('reg-balls').value;
+        if(!name || balls==="") return alert("請填寫姓名與球數");
+        sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value }, "btn-reg");
+    }
+
+    function submitCancel() {
+        const name = document.getElementById('cancel-name').value;
+        const reason = document.getElementById('cancel-reason').value;
+        if(!name || !reason) return alert("請輸入報名姓名與取消理由");
+        sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name, reason }, "btn-cancel");
+    }
 
     function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }, "btn-ann"); }
     function addNewEvent() { 
@@ -192,16 +233,23 @@
         if(!title || !date || !max) return alert("請填寫完整");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value }, "btn-admin"); 
     }
-    function submitRegistration() {
-        const name = document.getElementById('reg-name').value;
-        const balls = document.getElementById('reg-balls').value;
-        if(!name || balls==="") return alert("請填寫姓名與球數");
-        sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value }, "btn-reg");
-    }
     function deleteEvent(id) { if(confirm("確定刪除？")) sendData({ type: 'deleteEvent', eventId: id }, "header-tools"); }
 
-    // 初始化
-    if (currentAdminPwd) { isAdminMode = true; checkAdmin(); } else { fetchData(); }
+    (async () => {
+        if (currentAdminPwd) {
+            try {
+                const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
+                const result = await response.json();
+                if (result.status === "success") {
+                    isAdminMode = true;
+                    updateUIForAdmin();
+                } else {
+                    sessionStorage.removeItem('admin_pwd');
+                }
+            } catch(e) {}
+        }
+        fetchData();
+    })();
 </script>
 </body>
 </html>

@@ -7,59 +7,74 @@
     <style>
         :root { 
             --primary: #1a365d; --secondary: #2b6cb0; --accent: #f6ad55;
-            --danger: #e53e3e; --bg: #f7fafc; --white: #ffffff;
+            --danger: #e53e3e; --bg: #f7fafc; --white: #ffffff; --gray: #718096;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--primary); line-height: 1.5; }
-        header { background: var(--primary); color: var(--white); padding: 0 20px; height: 60px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--primary); }
+        
+        header { background: var(--primary); color: var(--white); padding: 0 20px; height: 60px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-        .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 20px; }
-        .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; }
-        .announcement-content { font-size: 0.95rem; white-space: pre-wrap; }
+        /* 排球旋轉動畫 */
+        @keyframes vball-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .vball-loader { font-size: 3rem; display: inline-block; animation: vball-spin 1s infinite linear; }
 
-        #event-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        #loading-overlay { 
+            position: fixed; inset: 0; background: var(--white); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; 
+        }
+
+        .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 25px; }
+        
+        .section-title { border-left: 5px solid var(--accent); padding-left: 10px; margin: 25px 0 15px 0; font-size: 1.2rem; }
+
+        .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .card { background: var(--white); border-radius: 20px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card-past { opacity: 0.8; background: #f1f5f9; filter: grayscale(0.5); }
+        
         .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; border-left: 3px solid var(--accent); white-space: pre-wrap; }
         
-        .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
-        .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+        .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 150px; overflow-y: auto; font-size: 0.85rem; }
+        .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; }
         .cancel-link { color: var(--danger); font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
 
-        .progress-bar-bg { background: #edf2f7; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
-        .progress-bar-fill { height: 100%; transition: width 0.5s; }
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-accent { background: var(--accent); color: var(--primary); }
+        .btn-accent:active { transform: scale(0.98); }
         
         .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
-        #loading-overlay { background: rgba(0,0,0,0.7); color: white; justify-content: center; align-items: center; z-index: 3000; }
-        
-        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--accent); }
     </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+    <div class="vball-loader">🏐</div>
+    <div style="margin-top:20px; font-weight:bold; color:var(--primary);">正在接球中...</div>
+</div>
 
 <header>
     <div style="font-weight:bold; cursor:pointer;" onclick="location.reload()">🏐 TCJH Volleyball</div>
     <div id="header-tools"><button class="btn-sm" onclick="checkAdmin()">⚙️ 管理</button></div>
 </header>
 
-<div id="loading-overlay" class="overlay">
-    <div style="text-align:center;">
-        <div style="font-size:2rem; margin-bottom:10px;">⏳</div>
-        <div>處理中，請稍候...</div>
-    </div>
-</div>
-
 <div class="app-container">
     <div class="announcement-card">
-        <div class="announcement-title">📢 公告與守則</div>
-        <div id="announcement-text" class="announcement-content">載入中...</div>
+        <div style="font-weight:800; color:#c05621; margin-bottom:5px;">📢 公告與守則</div>
+        <div id="announcement-text" style="font-size:0.95rem; white-space:pre-wrap;">...</div>
     </div>
-    <h3 style="border-left:5px solid var(--accent); padding-left:10px;">即將進行的練習</h3>
-    <div id="event-list"></div>
+
+    <div class="section-title">🔥 即將進行的練習</div>
+    <div id="event-list" class="event-grid"></div>
+
+    <div class="section-title" style="color:var(--gray); border-color:var(--gray);">⌛ 歷史場次</div>
+    <div id="past-list" class="event-grid"></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
@@ -96,8 +111,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; // ⚠️ 請更換為你的最新 GAS 網址
-    
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
     let isAdminMode = false;
     let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
 
@@ -106,124 +120,91 @@
             const resp = await fetch(GAS_URL);
             const data = await resp.json();
             document.getElementById('announcement-text').innerText = data.announcement;
-            renderEvents(data.events, data.regs);
+            renderAll(data);
+            document.getElementById('loading-overlay').style.display = 'none';
         } catch (e) {
-            document.getElementById('event-list').innerHTML = "<p>載入失敗，請檢查網路連線。</p>";
+            alert("載入失敗");
         }
     }
 
-    function renderEvents(events, regs) {
-        const list = document.getElementById('event-list');
-        if (!events || events.length <= 1) { list.innerHTML = "<p>目前沒有場次。</p>"; return; }
-        let html = '';
-        for (let i = 1; i < events.length; i++) {
-            const [id, date, title, max, desc] = events[i];
-            const eventRegs = regs ? regs.filter(r => String(r[0]) === String(id)) : [];
-            const count = eventRegs.length;
-            const progress = Math.min((count / max) * 100, 100);
-            
-            let regItems = eventRegs.map(r => `
-                <div class="reg-item">
-                    <span><b>👤 ${r[1]}</b> (${r[2]}球)</span>
-                    <span class="cancel-link" onclick="openCancel('${id}')">取消</span>
-                </div>`).join('');
+    function renderAll(data) {
+        const activeList = document.getElementById('event-list');
+        const pastList = document.getElementById('past-list');
+        
+        activeList.innerHTML = data.events.length ? data.events.map(ev => createCard(ev, data.regs, false)).join('') : "<p>目前暫無新場次</p>";
+        pastList.innerHTML = data.pastEvents.length ? data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : "<p>尚無歷史紀錄</p>";
+    }
 
-            html += `<div class="card">
+    function createCard(ev, allRegs, isPast) {
+        const [id, date, title, max, desc] = ev;
+        const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
+        const count = eventRegs.length;
+        const progress = Math.min((count / max) * 100, 100);
+        
+        return `
+            <div class="card ${isPast ? 'card-past' : ''}">
                 <div class="card-title">${title}</div>
-                <div style="font-size:0.8rem; color:var(--secondary);">📅 ${String(date).split('T')[0]}</div>
+                <div style="font-size:0.8rem; color:var(--secondary);">📅 ${new Date(date).toLocaleDateString()}</div>
                 <div class="card-desc">${desc}</div>
-                <div style="font-size:0.75rem; font-weight:bold;">目前人數 ${count} / ${max}</div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
-                <div class="reg-area">${regItems || '尚未有人報名'}</div>
-                <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
-                ${isAdminMode ? `<button style="margin-top:10px; color:var(--danger); background:none; border:none; width:100%; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除場次</button>` : ''}
+                <div style="font-size:0.75rem; font-weight:bold;">人數 ${count} / ${max}</div>
+                <div style="background:#edf2f7; height:6px; border-radius:3px; margin:8px 0; overflow:hidden;">
+                    <div style="width:${progress}%; height:100%; background:${count>=max?'var(--danger)':'var(--secondary)'}; transition:0.5s;"></div>
+                </div>
+                <div class="reg-area">${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span>${r[2]}球</span></div>`).join('') || '無人報名'}</div>
+                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>`}
+                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:none; width:100%; margin-top:10px; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除</button>` : ''}
+                ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.7rem; cursor:pointer; color:var(--gray); margin-top:10px;">欲取消報名請按此</p>` : ''}
             </div>`;
-        }
-        list.innerHTML = html;
     }
 
     async function sendData(payload) {
         document.getElementById('loading-overlay').style.display = 'flex';
-
-        if (['updateAnnouncement', 'createEvent', 'deleteEvent', 'verify'].includes(payload.type)) {
-            payload.adminPassword = currentAdminPwd;
-        }
+        if (isAdminMode || payload.type === 'verify') payload.adminPassword = currentAdminPwd;
 
         try {
-            const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await response.json();
-
+            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
             if (result.status === "success") {
                 if (payload.type === 'verify') {
-                    isAdminMode = true;
-                    sessionStorage.setItem('admin_pwd', currentAdminPwd);
-                    updateUIForAdmin();
-                    showCreate();
-                    document.getElementById('loading-overlay').style.display = 'none';
-                } else {
-                    alert("操作成功！");
-                    location.reload(); // 重新整理頁面以顯示最新資料
-                }
-            } else {
-                alert("❌ " + result.message);
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
-        } catch (error) {
-            alert("伺服器連線失敗，請稍後再試。");
-            document.getElementById('loading-overlay').style.display = 'none';
-        }
+                    isAdminMode = true; sessionStorage.setItem('admin_pwd', currentAdminPwd);
+                    updateUIForAdmin(); showCreate(); document.getElementById('loading-overlay').style.display = 'none';
+                } else { location.reload(); }
+            } else { alert(result.message); document.getElementById('loading-overlay').style.display = 'none'; }
+        } catch (e) { location.reload(); }
     }
 
-    async function checkAdmin() {
-        if (isAdminMode) return showCreate();
-        const pwd = prompt("請輸入管理密碼");
-        if (!pwd) return;
-        currentAdminPwd = pwd;
-        await sendData({ type: 'verify' });
+    // --- 其餘輔助函數 (與先前邏輯一致) ---
+    function checkAdmin() { 
+        if(isAdminMode) return showCreate();
+        const p = prompt("管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
     }
-
-    function updateUIForAdmin() {
-        document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理</button> <button class="btn-sm" onclick="logout()">登出</button>`;
-    }
-
+    function updateUIForAdmin() { document.getElementById('header-tools').innerHTML = `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理</button> <button class="btn-sm" onclick="logout()">登出</button>`; }
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
     function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
     function openReg(id, title) { document.getElementById('reg-overlay').style.display = 'flex'; document.getElementById('reg-event-id').value = id; document.getElementById('reg-title').innerText = title; }
     function openCancel(eventId) { document.getElementById('cancel-overlay').style.display = 'flex'; document.getElementById('cancel-event-id').value = eventId; }
-    
     function submitRegistration() {
         const name = document.getElementById('reg-name').value;
         const balls = document.getElementById('reg-balls').value;
-        if(!name || balls==="") return alert("請填寫姓名與球數");
+        if(!name || balls==="") return alert("未填寫");
         sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value });
     }
-    
     function submitCancel() {
         const name = document.getElementById('cancel-name').value;
-        if(!name) return alert("請輸入報名時使用的姓名以供比對");
         sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name });
     }
-    
     function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }); }
-    
     function addNewEvent() { 
-        const title = document.getElementById('admin-title').value;
-        const date = document.getElementById('admin-date').value;
-        const max = document.getElementById('admin-max').value;
-        if(!title || !date || !max) return alert("請填寫完整");
-        sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value }); 
+        sendData({ type: 'createEvent', id: 'E'+Date.now(), date: document.getElementById('admin-date').value, title: document.getElementById('admin-title').value, max: document.getElementById('admin-max').value, desc: document.getElementById('admin-desc').value }); 
     }
-    
-    function deleteEvent(id) { if(confirm("確定刪除此場次？")) sendData({ type: 'deleteEvent', eventId: id }); }
+    function deleteEvent(id) { if(confirm("刪除？")) sendData({ type: 'deleteEvent', eventId: id }); }
 
-    // 初始化讀取
     (async () => {
         if (currentAdminPwd) {
             try {
-                const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
-                const result = await response.json();
-                if (result.status === "success") { isAdminMode = true; updateUIForAdmin(); }
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
+                const r = await res.json(); if (r.status === "success") { isAdminMode = true; updateUIForAdmin(); }
             } catch(e) {}
         }
         fetchData();

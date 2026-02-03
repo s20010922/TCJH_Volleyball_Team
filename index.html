@@ -25,7 +25,6 @@
         .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; white-space: pre-wrap; border-left: 3px solid var(--accent); }
         
-        /* 👥 報名名單區 */
         .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
         .reg-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0; }
         .reg-note { font-size: 0.75rem; color: #718096; display: block; }
@@ -50,7 +49,7 @@
 
 <div class="app-container">
     <div id="announcement-area" class="announcement-card">
-        <div class="announcement-title">📢 隊內公告</div>
+        <div class="announcement-title">📢 公告與守則 📢</div>
         <div id="announcement-text" class="announcement-content">載入中...</div>
     </div>
 
@@ -60,7 +59,7 @@
 
 <div id="admin-overlay" class="overlay">
     <button class="btn-sm" style="color:var(--primary); border:1px solid #ddd; width:80px; background:none; margin-bottom:20px;" onclick="closeOverlay()">← 返回</button>
-    <h3>📢 公告管理</h3>
+    <h3>📢 公告與守則 📢</h3>
     <textarea id="admin-ann-input" rows="3" placeholder="輸入全隊公告..."></textarea>
     <button class="btn btn-accent" id="btn-ann" onclick="updateAnn()">更新公告</button>
     <hr style="margin:30px 0; opacity:0.1;">
@@ -85,33 +84,28 @@
 </div>
 
 <script>
-    // ⚠️ 請確保此網址為「新版本」部署後的結果
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
     
     let isAdminMode = false;
     let currentAdminPwd = "";
 
-    // 核心抓取資料函式
     async function fetchData() {
         try {
             const resp = await fetch(GAS_URL);
-            if (!resp.ok) throw new Error("網路回應不正確");
             const data = await resp.json();
             
-            // 公告欄顯示邏輯
             const announcementText = document.getElementById('announcement-text');
             const announcementInput = document.getElementById('admin-ann-input');
             
-            // 優先吃 Config 資料，若無則顯示預設
-            const content = data.announcement || "🚨 珍惜球場公物：損壞請務必通報。\n🏐 訓練態度：謝絕純攻擊手，不會沒關係，我們會教。";
+            // 修正：確實顯示從後端拿到的公告
+            const content = data.announcement || "🚨 目前尚無公告內容";
             announcementText.innerText = content;
             announcementInput.value = content;
 
             renderEvents(data.events, data.regs);
         } catch (e) {
-            console.error(e);
             document.getElementById('announcement-text').innerText = "無法載入公告";
-            document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請確認 GAS 網址或 Google 權限是否設為「所有人」。";
+            document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請確認 GAS 網址與部署版本。";
         }
     }
 
@@ -147,7 +141,7 @@
                 <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
                 <div class="reg-area"><strong>名單：</strong>${regItems}</div>
                 <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
-                ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:8px; width:100%; border-radius:10px; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
+                ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:8px; width:100%; border-radius:10px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
             </div>`;
         }
         list.innerHTML = html;
@@ -155,20 +149,20 @@
 
     function sendData(payload, btnId) {
         const btn = document.getElementById(btnId);
-        if (btn) { btn.innerText = "傳送中..."; btn.disabled = true; }
+        if (btn) { btn.innerText = "驗證權限並傳送中..."; btn.disabled = true; }
 
-        // 自動從暫存或變數補上管理密碼
         const adminActions = ['updateAnnouncement', 'createEvent', 'deleteEvent'];
         if (adminActions.includes(payload.type)) {
             payload.adminPassword = currentAdminPwd || sessionStorage.getItem('admin_pwd');
         }
 
+        // 注意：no-cors 模式無法得知後端回傳 Fail 還是 Success
         fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
         .then(() => {
-            alert("指令已送出！資料同步中...");
-            setTimeout(() => location.reload(), 1500);
+            alert("指令已送出。若密碼正確，資料將於 2 秒後同步。");
+            setTimeout(() => location.reload(), 2000);
         })
-        .catch(() => alert("傳送失敗，請檢查網路。"));
+        .catch(() => alert("連線異常"));
     }
 
     function checkAdmin() {
@@ -176,12 +170,15 @@
         const pwd = savedPwd || prompt("請輸入管理密碼");
         
         if (pwd) {
+            // 前端初步預防（雖然真正的密碼在後端比對，但在前端加這行可減少誤按）
             currentAdminPwd = pwd;
-            sessionStorage.setItem('admin_pwd', pwd); // 記憶登入狀態
+            sessionStorage.setItem('admin_pwd', pwd);
             isAdminMode = true; 
             document.getElementById('header-tools').innerHTML = 
                 `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
                  <button class="btn-sm" onclick="logout()">登出</button>`;
+            
+            // 登入後自動重刷資料以顯示刪除按鈕
             fetchData();
         }
     }
@@ -217,16 +214,16 @@
         const date = document.getElementById('admin-date').value;
         const max = document.getElementById('admin-max').value;
         const desc = document.getElementById('admin-desc').value;
-        if(!title || !date || !max) return alert("資訊不完整 (日期、標題、人數為必填)");
+        if(!title || !date || !max) return alert("資訊不完整");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc }, "btn-admin");
     }
 
     function deleteEvent(id) {
-        if(!confirm("確定要刪除這場練習嗎？所有人的報名資料也會一併消失。")) return;
-        sendData({ type: 'deleteEvent', eventId: id }, "btn-ann"); // 借用 btn-ann 顯示狀態
+        if(!confirm("確定要刪除嗎？")) return;
+        sendData({ type: 'deleteEvent', eventId: id }, "btn-ann");
     }
 
-    // 初始化：檢查是否曾登入過
+    // 初始化
     if (sessionStorage.getItem('admin_pwd')) {
         checkAdmin();
     } else {

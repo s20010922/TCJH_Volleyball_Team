@@ -358,7 +358,7 @@
                 
                 if (ev.status === 'vote') {
                     // 這裡傳入 data.votes (這是後端給的完整投票陣列)
-                    activeList.innerHTML += createVoteCard(ev, data.votes);
+                    activeList.innerHTML += (ev, data.votes);
                 } else if (ev.status === 'active') {
                     activeList.innerHTML += createCard(ev, data.regs, false);
                 } else {
@@ -371,12 +371,14 @@
     // 2. 修改 createVoteCard 函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
         const id = String(ev.event_id).trim();
-        // 取得選項陣列，並去除空白
-        const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()) : [];
+        // 取得選項陣列，並確實修剪空格
+        const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()).filter(o => o !== "") : [];
         
-        // 從 allVotes 中找出屬於此活動的投票紀錄
-        // 後端格式：[event_id, name, choice]
-        const evVotes = Array.isArray(allVotes) ? allVotes.filter(v => String(v[0]).trim() === id) : [];
+        // 確保 allVotes 是陣列
+        const safeVotes = Array.isArray(allVotes) ? allVotes : [];
+        
+        // 找出屬於此活動的所有投票紀錄
+        const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         
         const d = new Date(ev.date);
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
@@ -391,16 +393,19 @@
                 <div style="display: grid; gap: 10px;">`;
     
         opts.forEach(opt => {
-            // 在該活動的投票中，篩選出選擇此選項(opt)的人名(v[1])
+            // 【關鍵修復點】：使用 trim() 並確保字串化比對
             const voters = evVotes
-                .filter(v => String(v[2]).trim() === opt)
+                .filter(v => String(v[2]).trim() === String(opt).trim())
                 .map(v => String(v[1]).trim());
             
             html += `
                 <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
-                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
-                        📅 ${opt}
+                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer; transition: 0.2s;"
+                     onmouseover="this.style.borderColor='var(--accent)'" 
+                     onmouseout="this.style.borderColor='#e2e8f0'">
+                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
+                        <span>📅 ${opt}</span>
+                        <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
                         ${voters.length > 0 
@@ -415,7 +420,8 @@
                 ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:15px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
-    }    
+    }
+    
     // 投票點擊觸發
     function handleVoteClick(id, title, choice) {
         // 開啟你已經寫好的 vote-overlay

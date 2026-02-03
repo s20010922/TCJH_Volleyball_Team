@@ -9,420 +9,290 @@
         :root { 
             --primary: #1a365d; --secondary: #2b6cb0; --accent: #f6ad55;
             --danger: #e53e3e; --bg: #f7fafc; --white: #ffffff; --gray: #718096;
+            --vote-bg: #feebc8; --vote-text: #9c4221;
         }
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
-            font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", sans-serif; 
-            background: var(--bg); 
-            margin: 0; 
-            color: var(--primary);
+            font-family: 'Noto Sans TC', sans-serif; background: var(--bg); margin: 0; color: var(--primary);
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        
         header { 
-            background: var(--primary); 
-            color: var(--white); 
-            padding: 0 15px 0 20px; 
-            height: 60px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            background: var(--primary); color: var(--white); padding: 0 15px 0 20px; 
+            height: 60px; display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
-
-        .header-logo {
-            font-weight: 900;
-            font-size: 1.15rem;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(90deg, #fff, var(--accent), #fff);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shine 3s linear infinite, logo-float 2s ease-in-out infinite;
-        }
-
-        .header-logo::before {
-            content: "🏐";
-            -webkit-text-fill-color: initial;
-            display: inline-block;
-            font-size: 1.3rem;
-            animation: ball-wiggle 2s infinite ease-in-out;
-        }
-
-        @keyframes shine { to { background-position: 200% center; } }
-        @keyframes logo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-        @keyframes ball-wiggle { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg) scale(1.1); } }
-
-        .menu-btn {
-            background: rgba(255,255,255,0.1); border: none; color: white; 
-            font-size: 1.3rem; cursor: pointer; width: 40px; height: 40px;
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        }
-
-        .drawer-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000;
-            display: none; opacity: 0; transition: 0.3s;
-        }
-        .drawer-overlay.open { display: block; opacity: 1; }
-        .drawer {
-            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
-            background: var(--white); z-index: 2001; 
-            box-shadow: -5px 0 25px rgba(0,0,0,0.15);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 25px 20px; display: flex; flex-direction: column;
-        }
-        .drawer.open { right: 0; }
-        .drawer-header {
-            font-weight: 900; font-size: 1.3rem; margin-bottom: 25px; 
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #f1f5f9; padding-bottom: 15px;
-        }
-        .drawer-item {
-            padding: 14px 15px; border-radius: 12px; margin-bottom: 8px;
-            cursor: pointer; display: flex; align-items: center; gap: 12px;
-            font-weight: 700; transition: 0.2s; color: var(--primary);
-        }
-        .drawer-item:active { background: #f0f4f8; }
-
-        button:disabled {
-            background-color: var(--gray) !important;
-            box-shadow: none !important;
-            transform: none !important;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn-sm { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
+        .header-logo { font-weight: 900; font-size: 1.15rem; letter-spacing: 1.5px; cursor: pointer; color: white; }
+        
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
+        .section-title { border-left: 6px solid var(--accent); padding-left: 12px; margin: 30px 0 15px 0; font-size: 1.3rem; font-weight: 900; }
+        
+        /* 卡片與投票樣式 */
+        .card { background: var(--white); border-radius: 24px; padding: 22px; margin-bottom: 20px; border: 1px solid #edf2f7; box-shadow: 0 6px 15px rgba(0,0,0,0.04); position: relative; }
+        .badge { position: absolute; top: 20px; right: 20px; padding: 4px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 800; }
+        .badge-vote { background: var(--vote-bg); color: var(--vote-text); }
+        
+        /* 投票進度條 */
+        .poll-option { margin-top: 12px; cursor: pointer; position: relative; }
+        .poll-bar-bg { background: #edf2f7; height: 40px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; position: relative; }
+        .poll-bar-fill { background: var(--accent); height: 100%; transition: width 0.6s ease; opacity: 0.3; }
+        .poll-text { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-weight: 700; font-size: 0.9rem; }
+        
+        /* Tooltip 懸停顯示名單 */
+        .poll-option:hover::after {
+            content: attr(data-voters);
+            position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; padding: 8px 12px; border-radius: 8px;
+            font-size: 0.8rem; white-space: pre-wrap; z-index: 100; min-width: 100px;
+            display: var(--tooltip-display, none);
+        }
+        .poll-option:hover { --tooltip-display: block; }
 
-        @keyframes vball-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .vball-loader { font-size: 3.5rem; display: inline-block; animation: vball-spin 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn { width: 100%; padding: 14px; border-radius: 15px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-accent { background: var(--accent); color: var(--primary); }
+        .btn-outline { background: none; border: 2px solid #edf2f7; color: var(--gray); font-size: 0.85rem; }
+        .btn-admin { background: #fdf2f2; border: 1px solid #feb2b2; color: #c53030; }
+
+        .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
+        input, textarea, select { padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; margin-bottom: 12px; font-size: 1rem; width: 100%; }
 
         #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; }
-
-        .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 18px; padding: 18px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(246, 173, 85, 0.1); }
-        .announcement-header { font-weight: 900; color: #c05621; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
-        
-        .section-title { border-left: 6px solid var(--accent); padding-left: 12px; margin: 30px 0 15px 0; font-size: 1.3rem; font-weight: 900; letter-spacing: 0.5px; }
-
-        .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .card { background: var(--white); border-radius: 24px; padding: 22px; border: 1px solid #edf2f7; box-shadow: 0 6px 15px rgba(0,0,0,0.04); transition: transform 0.2s; }
-        .card-past { opacity: 0.75; background: #f8fafc; filter: grayscale(0.8); }
-        
-        .card-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; color: var(--primary); letter-spacing: -0.2px; }
-        .card-date { font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 4px; }
-        .card-desc { font-size: 0.95rem; color: #4a5568; background: #f8fafc; padding: 12px; border-radius: 14px; margin: 12px 0; border-left: 4px solid var(--accent); white-space: pre-wrap; line-height: 1.6; }
-        
-        .ball-count-badge {
-            background: #ebf8ff; color: var(--secondary);
-            padding: 6px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 800;
-            display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px;
-            border: 1px solid #bee3f8;
-        }
-
-        .reg-area { background: #f1f5f9; border-radius: 14px; padding: 12px; margin: 12px 0; max-height: 160px; overflow-y: auto; font-size: 0.9rem; }
-        .reg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-weight: 500; }
-        .reg-item:last-child { border-bottom: none; }
-
-        .btn { width: 100%; padding: 14px; border-radius: 15px; border: none; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
-        .btn-accent { background: var(--accent); color: var(--primary); box-shadow: 0 4px 0 #d69e2e; margin-bottom: 4px; }
-        .btn-accent:active { transform: translateY(3px); box-shadow: 0 1px 0 #d69e2e; }
-        
-        .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
-        input, textarea { font-family: inherit; width: 100%; padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; margin-bottom: 12px; font-size: 1rem; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--accent); background: #fffaf0; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <div class="vball-loader">🏐</div>
-    <div id="loading-text" style="margin-top:20px; font-weight:700; color:var(--primary); font-size: 1.1rem; letter-spacing: 2px;">正在撿球中...</div>
-</div>
+<div id="loading-overlay">🏐 撿球中...</div>
 
 <header>
-    <div class="header-logo" onclick="location.reload()">TCJH_VOLLEYBALL_TEAM</div>
-    <button class="menu-btn" onclick="toggleDrawer(true)">☰</button>
+    <div class="header-logo" onclick="location.reload()">🏐 TCJH TEAM</div>
+    <button style="background:none; border:none; color:white; font-size:1.5rem;" onclick="openAdmin()">⚙️</button>
 </header>
 
-<div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer(false)"></div>
-<div id="drawer" class="drawer">
-    <div class="drawer-header">
-        <span>選單</span>
-        <button style="background:none; border:none; font-size:1.8rem; cursor:pointer;" onclick="toggleDrawer(false)">×</button>
-    </div>
-    <div class="drawer-item" onclick="showInstruction()">📖 使用說明</div>
-    <hr style="width:100%; opacity:0.1; margin: 15px 0;">
-    <div id="drawer-admin-tools">
-        <div class="drawer-item" onclick="checkAdmin()">⚙️ 管理員登入</div>
-    </div>
-</div>
-
 <div class="app-container">
-    <div class="announcement-card">
-        <div class="announcement-header">🏐 公告與守則 🏐</div>
-        <div id="announcement-text" style="font-size:1rem; line-height: 1.6; font-weight: 400;">...</div>
-    </div>
-
-    <div class="section-title">🔥 即將進行的練習</div>
-    <div id="event-list" class="event-grid"></div>
-
-    <div class="section-title" style="color:var(--gray); border-color:var(--gray); opacity: 0.6;">⌛ 歷史場次</div>
-    <div id="past-list" class="event-grid"></div>
+    <div id="vote-section"></div>
+    <div id="active-section"></div>
+    <div id="past-section"></div>
 </div>
 
-<div id="admin-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
-    <h3 style="font-weight:900;">📢 更新公告</h3>
-    <textarea id="admin-ann-input" rows="3"></textarea>
-    <button id="btn-update-ann" class="btn btn-accent" onclick="updateAnn()">發布新公告</button>
-    <hr style="margin:30px 0; opacity:0.1;">
-    <h3 style="font-weight:900;">🆕 新增場次</h3>
-    <input type="date" id="admin-date">
-    <input type="text" id="admin-title" placeholder="場次名稱">
-    <input type="number" id="admin-max" placeholder="人數上限">
-    <textarea id="admin-desc" rows="4" placeholder="填寫菜單"></textarea>
-    <button id="btn-add-event" class="btn btn-accent" onclick="addNewEvent()">發布場次</button>
+<div id="vote-overlay" class="overlay">
+    <button class="btn-outline" style="width:80px" onclick="closeOverlay()">← 返回</button>
+    <h2 id="vote-target-title" style="margin-top:20px;">確認投票</h2>
+    <p id="vote-target-choice" style="font-weight:700; color:var(--secondary); font-size:1.2rem;"></p>
+    <input type="text" id="vote-name" placeholder="請輸入您的姓名 (記名投票)">
+    <button class="btn btn-accent" onclick="submitVote()">送出投票</button>
 </div>
 
 <div id="reg-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
-    <h2 id="reg-title" style="font-weight:900;">報名</h2>
+    <button class="btn-outline" style="width:80px" onclick="closeOverlay()">← 返回</button>
+    <h2 id="reg-title" style="margin-top:20px;">報名場次</h2>
     <input type="hidden" id="reg-event-id">
-    <input type="text" id="reg-name" placeholder="你的姓名">
+    <input type="text" id="reg-name" placeholder="姓名">
     <input type="number" id="reg-balls" placeholder="攜帶球數">
-    <textarea id="reg-note" rows="3" placeholder="備註"></textarea>
-    <button id="btn-submit-reg" class="btn btn-accent" onclick="submitRegistration()">確認報名</button>
+    <textarea id="reg-note" placeholder="備註"></textarea>
+    <button class="btn btn-accent" onclick="submitRegistration()">確認報名</button>
 </div>
 
-<div id="cancel-overlay" class="overlay">
-    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
-    <h2 style="font-weight:900;">取消報名</h2>
-    <p style="font-size:0.95rem; color:var(--danger); font-weight: 500;">* 請輸入您報名時使用的姓名</p>
-    <input type="hidden" id="cancel-event-id">
-    <input type="text" id="cancel-name" placeholder="請輸入報名姓名">
-    <button id="btn-submit-cancel" class="btn" style="background:var(--danger); color:white;" onclick="submitCancel()">確認取消</button>
+<div id="admin-overlay" class="overlay">
+    <button class="btn-outline" style="width:80px" onclick="closeOverlay()">← 返回</button>
+    <h3 style="margin-top:20px;">🛠️ 管理控制台</h3>
+    <label>發布類型</label>
+    <select id="admin-status">
+        <option value="vote">投票模式 (說明欄請填寫選項，用逗號隔開)</option>
+        <option value="active">報名模式</option>
+    </select>
+    <input type="text" id="admin-title" placeholder="標題 (例如：下週練習時間投票)">
+    <input type="date" id="admin-date">
+    <input type="number" id="admin-max" placeholder="人數上限 (投票模式可填0)">
+    <textarea id="admin-desc" placeholder="說明或投票選項 (例: 週二,週三,週四)"></textarea>
+    <button class="btn btn-accent" onclick="addNewEvent()">發布項目</button>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
-    let isAdminMode = false;
-    let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
-
-    function toggleDrawer(open) {
-        document.getElementById('drawer').classList.toggle('open', open);
-        document.getElementById('drawer-overlay').classList.toggle('open', open);
-    }
-
-    function showInstruction() {
-        toggleDrawer(false);
-        alert("【使用說明】\n1. 點擊「立即報名」填寫資料。\n2. 下方會統計「當前全隊總球數」，方便評估球量。\n3. 若需取消，請點擊場次下方的取消連結。");
-    }
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec";
+    let allData = {};
+    let isAdmin = sessionStorage.getItem('isAdmin') === 'true';
 
     async function fetchData() {
         document.getElementById('loading-overlay').style.display = 'flex';
-        document.getElementById('loading-text').innerText = "正在撿球中...";
         try {
-            const resp = await fetch(GAS_URL);
-            const data = await resp.json();
-            document.getElementById('announcement-text').innerText = data.announcement;
-            renderAll(data);
-        } catch (e) {
-            console.error(e);
-            alert("資料載入失敗，請重新整理頁面");
+            const res = await fetch(GAS_URL);
+            allData = await res.json();
+            render();
         } finally {
             document.getElementById('loading-overlay').style.display = 'none';
         }
     }
 
-    function renderAll(data) {
-        const activeList = document.getElementById('event-list');
-        const pastList = document.getElementById('past-list');
-        activeList.innerHTML = data.events.length ? data.events.map(ev => createCard(ev, data.regs, false)).join('') : "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
-        pastList.innerHTML = data.pastEvents.length ? data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : "<p style='padding:20px; color:var(--gray);'>尚無歷史紀錄</p>";
-    }
-
-    function createCard(ev, allRegs, isPast) {
-        // 解構賦值對應統一後的小寫欄位：event_id, date, title, max, desc
-        const [event_id, date, title, max, desc] = ev;
-        const eventRegs = allRegs.filter(r => String(r[0]) === String(event_id));
-        const count = eventRegs.length;
-        const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
-        const progress = Math.min((count / max) * 100, 100);
-        const formattedDate = new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+    function render() {
+        const vArea = document.getElementById('vote-section');
+        const aArea = document.getElementById('active-section');
         
-        return `
-            <div class="card ${isPast ? 'card-past' : ''}">
-                <div class="card-title">${title}</div>
-                <div class="card-date">📅 ${formattedDate}</div>
-                <div class="card-desc">${desc}</div>
-                <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span>報名進度</span>
-                    <span>${count} / ${max} 人</span>
-                </div>
-                <div style="background:#edf2f7; height:10px; border-radius:5px; margin-bottom:10px; overflow:hidden;">
-                    <div style="width:${progress}%; height:100%; background:${count>=max?'var(--danger)':'var(--secondary)'}; transition:width 0.8s ease-out;"></div>
-                </div>
-                <div class="ball-count-badge">🏐 當前全隊總球數：${totalBalls}</div>
-                <div class="reg-area">
-                    ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
-                </div>
-                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${event_id}', '${title}')">立即報名</button>`}
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${event_id}')">🗑️ 刪除此場次</button>` : ''}
-                ${!isPast ? `<p onclick="openCancel('${event_id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">欲取消報名請點擊此處</p>` : ''}
-            </div>`;
+        vArea.innerHTML = '';
+        aArea.innerHTML = '<div class="section-title">🔥 即將進行的練習</div>';
+
+        const votes = allData.events.filter(e => e.status === 'vote');
+        const actives = allData.events.filter(e => e.status === 'active');
+
+        if(votes.length > 0) {
+            vArea.innerHTML = '<div class="section-title">🗳️ 投票中</div>';
+            votes.forEach(ev => vArea.appendChild(createVoteCard(ev)));
+        }
+
+        actives.forEach(ev => aArea.appendChild(createActiveCard(ev)));
     }
 
-    async function sendData(payload) {
-        const loader = document.getElementById('loading-overlay');
-        const loadText = document.getElementById('loading-text');
-        const buttons = document.querySelectorAll('button');
+    function createVoteCard(ev) {
+        const div = document.createElement('div');
+        div.className = 'card';
+        const options = ev.desc.split(',').map(s => s.trim());
+        const evVotes = allData.votes.filter(v => v[0] === ev.event_id);
+        
+        div.innerHTML = `<div class="badge badge-vote">投票中</div><div class="card-title">${ev.title}</div>`;
+        
+        options.forEach(opt => {
+            const voters = evVotes.filter(v => v[2] === opt).map(v => v[1]);
+            const percent = evVotes.length ? (voters.length / evVotes.length * 100) : 0;
+            
+            const optDiv = document.createElement('div');
+            optDiv.className = 'poll-option';
+            optDiv.setAttribute('data-voters', voters.length ? `已投 (${voters.length}人):\n${voters.join(', ')}` : "暫無人投票");
+            optDiv.onclick = () => openVote(ev.event_id, ev.title, opt);
+            optDiv.innerHTML = `
+                <div class="poll-bar-bg">
+                    <div class="poll-bar-fill" style="width:${percent}%"></div>
+                    <div class="poll-text"><span>${opt}</span><span>${voters.length} 票</span></div>
+                </div>`;
+            div.appendChild(optDiv);
+        });
 
-        try {
-            buttons.forEach(b => b.disabled = true);
-            loader.style.display = 'flex';
-            loadText.innerText = "正在撿球中...";
+        if (isAdmin) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-admin';
+            btn.innerText = '結束投票並開啟報名';
+            btn.onclick = () => convertToActive(ev.event_id);
+            div.appendChild(btn);
+        }
+        return div;
+    }
 
-            if (isAdminMode || payload.type === 'verify') {
-                payload.adminPassword = currentAdminPwd;
+    function createActiveCard(ev) {
+        const div = document.createElement('div');
+        div.className = 'card';
+        const regs = allData.regs.filter(r => r[0] === ev.event_id);
+        const totalBalls = regs.reduce((s, r) => s + (parseInt(r[2]) || 0), 0);
+        
+        div.innerHTML = `
+            <div class="card-title">${ev.title}</div>
+            <div style="color:var(--secondary); font-weight:700; font-size:0.9rem; margin-bottom:10px;">📅 ${new Date(ev.date).toLocaleDateString()}</div>
+            <div style="background:#f8fafc; padding:12px; border-radius:12px; font-size:0.9rem; margin-bottom:10px;">${ev.desc}</div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700; margin-bottom:5px;">
+                <span>報名人數: ${regs.length} / ${ev.max}</span>
+                <span>🏐 總球數: ${totalBalls}</span>
+            </div>
+            <button class="btn btn-accent" onclick="openReg('${ev.event_id}', '${ev.title}')">立即報名</button>
+        `;
+        
+        if(isAdmin) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn btn-outline';
+            delBtn.innerText = '🗑️ 結束並封存此場次';
+            delBtn.onclick = () => archiveEvent(ev.event_id);
+            div.appendChild(delBtn);
+        }
+        return div;
+    }
+
+    // 彈窗邏輯
+    function openVote(id, title, choice) {
+        window.currentVoteTask = { id, choice };
+        document.getElementById('vote-target-title').innerText = title;
+        document.getElementById('vote-target-choice').innerText = "您的選擇：" + choice;
+        document.getElementById('vote-overlay').style.display = 'flex';
+    }
+
+    function openReg(id, title) {
+        document.getElementById('reg-event-id').value = id;
+        document.getElementById('reg-title').innerText = "報名：" + title;
+        document.getElementById('reg-overlay').style.display = 'flex';
+    }
+
+    function openAdmin() {
+        if(!isAdmin) {
+            const p = prompt("請輸入管理密碼");
+            if(p) {
+                window.adminPwd = p;
+                sendData({type:'verify', adminPassword:p});
             }
-
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await res.json();
-
-            if (result.status === "success") {
-                if (payload.type === 'verify') {
-                    isAdminMode = true;
-                    sessionStorage.setItem('admin_pwd', currentAdminPwd);
-                    updateUIForAdmin();
-                    showCreate();
-                } else {
-                    if(payload.type === 'register') alert("🎉 報名成功！");
-                    if(payload.type === 'cancelRegistration') alert("✅ 已取消報名");
-                    closeOverlay();
-                    await fetchData();
-                }
-            } else {
-                alert("❌ 操作失敗：" + result.message);
-            }
-        } catch (e) {
-            console.error(e);
-            alert("🌐 網路錯誤或連線逾時，請檢查網路後再試");
-        } finally {
-            buttons.forEach(b => b.disabled = false);
-            loader.style.display = 'none';
+        } else {
+            document.getElementById('admin-overlay').style.display = 'flex';
         }
     }
 
-    function checkAdmin() { 
-        toggleDrawer(false);
-        if(isAdminMode) return showCreate();
-        const p = prompt("請輸入管理密碼"); 
-        if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
+    function closeOverlay() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
+
+    // API 呼叫
+    async function sendData(payload) {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        if(isAdmin || payload.type === 'verify') payload.adminPassword = window.adminPwd || sessionStorage.getItem('pwd');
+        
+        try {
+            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if(result.status === 'success') {
+                if(payload.type === 'verify') {
+                    isAdmin = true;
+                    sessionStorage.setItem('isAdmin', 'true');
+                    sessionStorage.setItem('pwd', payload.adminPassword);
+                    alert("驗證成功");
+                }
+                closeOverlay();
+                await fetchData();
+            } else {
+                alert(result.message);
+            }
+        } finally {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
     }
 
-    function updateUIForAdmin() { 
-        document.getElementById('drawer-admin-tools').innerHTML = `
-            <div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 進入管理模式</div>
-            <div class="drawer-item" onclick="logout()">🚪 登出管理員</div>
-        `;
+    function submitVote() {
+        const name = document.getElementById('vote-name').value.trim();
+        if(!name) return alert("請輸入姓名");
+        sendData({ type: 'vote', event_id: window.currentVoteTask.id, name, choice: window.currentVoteTask.choice });
     }
 
-    function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
-    function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; }
-    function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    
-    function openReg(event_id, title) { 
-        document.getElementById('reg-overlay').style.display = 'flex'; 
-        document.getElementById('reg-event-id').value = event_id; 
-        document.getElementById('reg-title').innerText = '報名：' + title; 
-    }
-    
-    function openCancel(event_id) { 
-        document.getElementById('cancel-overlay').style.display = 'flex'; 
-        document.getElementById('cancel-event-id').value = event_id; 
-    }
-    
     function submitRegistration() {
         const name = document.getElementById('reg-name').value.trim();
         const balls = document.getElementById('reg-balls').value;
         if(!name) return alert("請輸入姓名");
-        if(name.length > 10) return alert("姓名長度請在10字以內");
-        if(balls === "" || balls < 0) return alert("請輸入正確球數");
-        
         sendData({ 
             type: 'register', 
             event_id: document.getElementById('reg-event-id').value, 
-            name, 
-            balls: parseInt(balls), 
-            note: document.getElementById('reg-note').value 
+            name, balls, note: document.getElementById('reg-note').value 
         });
-    }
-    
-    function submitCancel() {
-        const name = document.getElementById('cancel-name').value.trim();
-        if(!name) return alert("請輸入報名姓名");
-        sendData({ 
-            type: 'cancelRegistration', 
-            event_id: document.getElementById('cancel-event-id').value, 
-            name 
-        });
-    }
-    
-    function updateAnn() { 
-        const content = document.getElementById('admin-ann-input').value.trim();
-        if(!content) return alert("公告內容不可為空");
-        sendData({ type: 'updateAnnouncement', content }); 
-    }
-    
-    function addNewEvent() { 
-        const date = document.getElementById('admin-date').value;
-        const title = document.getElementById('admin-title').value.trim();
-        const max = document.getElementById('admin-max').value;
-        if(!date || !title || !max) return alert("請填寫完整場次資訊");
-        sendData({ 
-            type: 'createEvent', 
-            event_id: 'E'+Date.now(), 
-            date, 
-            title, 
-            max: parseInt(max), 
-            desc: document.getElementById('admin-desc').value 
-        }); 
-    }
-    
-    function deleteEvent(event_id) { 
-        if(confirm("確定要刪除這場練習嗎？所有報名紀錄也會同步刪除。")) {
-            sendData({ type: 'deleteEvent', event_id: event_id }); 
-        }
     }
 
-    (async () => {
-        if (currentAdminPwd) {
-            try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });
-                const r = await res.json(); 
-                if (r.status === "success") { 
-                    isAdminMode = true; 
-                    updateUIForAdmin(); 
-                }
-            } catch(e) {
-                console.warn("背景登入驗證失敗");
-            }
-        }
-        fetchData();
-    })();
+    function addNewEvent() {
+        sendData({
+            type: 'createEvent',
+            event_id: 'E' + Date.now(),
+            status: document.getElementById('admin-status').value,
+            title: document.getElementById('admin-title').value,
+            date: document.getElementById('admin-date').value,
+            max: document.getElementById('admin-max').value,
+            desc: document.getElementById('admin-desc').value
+        });
+    }
+
+    function convertToActive(id) {
+        const newTitle = prompt("投票結束，請輸入確定的場次名稱/日期 (例如: 2/10 自由練習)");
+        if(newTitle) sendData({ type: 'convertToActive', event_id: id, newTitle });
+    }
+
+    function archiveEvent(id) {
+        if(confirm("確定要結束並封存此場次嗎？")) sendData({ type: 'archiveEvent', event_id: id });
+    }
+
+    fetchData();
 </script>
 </body>
 </html>

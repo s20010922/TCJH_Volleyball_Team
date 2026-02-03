@@ -15,7 +15,6 @@
             -webkit-tap-highlight-color: transparent;
         }
         body { 
-            /* 使用思源黑體作為主要字體 */
             font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", sans-serif; 
             background: var(--bg); 
             margin: 0; 
@@ -37,17 +36,53 @@
             z-index: 1000; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
+
+        /* --- 標題 Logo 優化與動畫 --- */
         .header-logo {
-            font-weight: 900; /* 極粗體 */
-            font-size: 1.1rem;
-            letter-spacing: 1px;
+            font-weight: 900;
+            font-size: 1.15rem;
+            letter-spacing: 1.5px;
             cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            
+            /* 漸層流光文字效果 */
+            background: linear-gradient(90deg, #fff, var(--accent), #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite, logo-float 2s ease-in-out infinite;
         }
+
+        /* 標題球體單獨擺動 */
+        .header-logo::before {
+            content: "🏐";
+            -webkit-text-fill-color: initial; /* 讓球恢復原本顏色 */
+            display: inline-block;
+            font-size: 1.3rem;
+            animation: ball-wiggle 2s infinite ease-in-out;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        @keyframes logo-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes ball-wiggle {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg) scale(1.1); }
+        }
+        /* ------------------------ */
 
         .btn-sm { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-        /* 排球旋轉動畫 */
         @keyframes vball-spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -67,7 +102,7 @@
             padding-left: 12px; 
             margin: 30px 0 15px 0; 
             font-size: 1.3rem; 
-            font-weight: 900; /* 標題加粗 */
+            font-weight: 900;
             letter-spacing: 0.5px;
         }
 
@@ -103,7 +138,7 @@
 </div>
 
 <header>
-    <div class="header-logo" onclick="location.reload()">🏐 TCJH_VOLLEYBALL_TEAM</div>
+    <div class="header-logo" onclick="location.reload()">TCJH_VOLLEYBALL_TEAM</div>
     <div id="header-tools"><button class="btn-sm" onclick="checkAdmin()">⚙️ 管理</button></div>
 </header>
 
@@ -154,7 +189,6 @@
 </div>
 
 <script>
-    /* JavaScript 部分保持與之前功能一致，僅確保 GAS_URL 正確 */
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
     let isAdminMode = false;
     let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
@@ -168,7 +202,7 @@
             document.getElementById('loading-overlay').style.display = 'none';
         } catch (e) {
             console.error(e);
-            alert("載入失敗，請檢查網路連接");
+            alert("載入失敗");
         }
     }
 
@@ -207,7 +241,6 @@
             </div>`;
     }
 
-    // 發送資料與其餘邏輯 (保持不變)
     async function sendData(payload) {
         document.getElementById('loading-overlay').style.display = 'flex';
         if (isAdminMode || payload.type === 'verify') payload.adminPassword = currentAdminPwd;
@@ -252,7 +285,7 @@
         if(!date || !title || !max) return alert("請填寫完整場次資訊");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value }); 
     }
-    function deleteEvent(id) { if(confirm("確定要刪除這場練習嗎？所有報名紀錄也會一併消失。")) sendData({ type: 'deleteEvent', eventId: id }); }
+    function deleteEvent(id) { if(confirm("確定要刪除這場練習嗎？")) sendData({ type: 'deleteEvent', eventId: id }); }
 
     (async () => {
         if (currentAdminPwd) {

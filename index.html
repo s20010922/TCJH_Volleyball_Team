@@ -85,150 +85,156 @@
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
+        
+        let isAdminMode = false;
+        let currentAdminPwd = "";
     
-    let isAdminMode = false;
-    let currentAdminPwd = "";
-
-    async function fetchData() {
-        try {
-            const resp = await fetch(GAS_URL);
-            const data = await resp.json();
-            
-            const announcementText = document.getElementById('announcement-text');
-            const announcementInput = document.getElementById('admin-ann-input');
-            
-            // 修正：確實顯示從後端拿到的公告
-            const content = data.announcement || "🚨 目前尚無公告內容";
-            announcementText.innerText = content;
-            announcementInput.value = content;
-
-            renderEvents(data.events, data.regs);
-        } catch (e) {
-            document.getElementById('announcement-text').innerText = "無法載入公告";
-            document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請確認 GAS 網址與部署版本。";
+        async function fetchData() {
+            try {
+                // 加上快取破除參數，確保抓到最新公告
+                const resp = await fetch(`${GAS_URL}?t=${Date.now()}`);
+                const data = await resp.json();
+                
+                const announcementText = document.getElementById('announcement-text');
+                const announcementInput = document.getElementById('admin-ann-input');
+                
+                const content = data.announcement || "🚨 目前尚無公告內容";
+                announcementText.innerText = content;
+                announcementInput.value = content;
+    
+                renderEvents(data.events, data.regs);
+            } catch (e) {
+                document.getElementById('announcement-text').innerText = "無法載入公告";
+                document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請確認 GAS 網址與部署版本。";
+            }
         }
-    }
-
-    function renderEvents(events, regs) {
-        const list = document.getElementById('event-list');
-        if (!events || events.length <= 1) { 
-            list.innerHTML = "<p style='color:#a0aec0;'>目前沒有安排任何練習場次。</p>"; 
-            return; 
-        }
-        
-        let html = '';
-        for (let i = 1; i < events.length; i++) {
-            const [id, date, title, max, desc] = events[i];
-            const eventRegs = regs ? regs.filter(r => String(r[0]) === String(id)) : [];
-            const count = eventRegs.length;
-            const progress = (count / max) * 100;
+    
+        function renderEvents(events, regs) {
+            const list = document.getElementById('event-list');
+            if (!events || events.length <= 1) { 
+                list.innerHTML = "<p style='color:#a0aec0;'>目前沒有安排任何練習場次。</p>"; 
+                return; 
+            }
             
-            let regItems = eventRegs.length > 0 
-                ? eventRegs.map(r => `<div class="reg-item">
-                    <div><b>👤 ${r[1]}</b> <span class="reg-note">${r[3]||''}</span></div>
-                    <div style="color:var(--secondary)">🏐 ${r[2]}</div>
-                  </div>`).join('')
-                : '<div style="color:#a0aec0; text-align:center; padding:10px;">尚未有人報名</div>';
-
-            html += `<div class="card">
-                <div class="card-title">${title}</div>
-                <div style="font-size:0.8rem; color:var(--secondary); margin-bottom:10px;">📅 ${String(date).split('T')[0]}</div>
-                <div class="card-desc">${desc}</div>
-                <div style="font-size:0.75rem; font-weight:bold; display:flex; justify-content:space-between; margin-top:15px;">
-                    <span>目前人數 ${count} / ${max}</span>
-                    <span>${Math.round(progress)}%</span>
-                </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
-                <div class="reg-area"><strong>名單：</strong>${regItems}</div>
-                <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
-                ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:8px; width:100%; border-radius:10px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
-            </div>`;
+            let html = '';
+            for (let i = 1; i < events.length; i++) {
+                const [id, date, title, max, desc] = events[i];
+                const eventRegs = regs ? regs.filter(r => String(r[0]) === String(id)) : [];
+                const count = eventRegs.length;
+                const progress = (count / max) * 100;
+                
+                let regItems = eventRegs.length > 0 
+                    ? eventRegs.map(r => `<div class="reg-item">
+                        <div><b>👤 ${r[1]}</b> <span class="reg-note">${r[3]||''}</span></div>
+                        <div style="color:var(--secondary)">🏐 ${r[2]}</div>
+                      </div>`).join('')
+                    : '<div style="color:#a0aec0; text-align:center; padding:10px;">尚未有人報名</div>';
+    
+                html += `<div class="card">
+                    <div class="card-title">${title}</div>
+                    <div style="font-size:0.8rem; color:var(--secondary); margin-bottom:10px;">📅 ${String(date).split('T')[0]}</div>
+                    <div class="card-desc">${desc}</div>
+                    <div style="font-size:0.75rem; font-weight:bold; display:flex; justify-content:space-between; margin-top:15px;">
+                        <span>目前人數 ${count} / ${max}</span>
+                        <span>${Math.round(progress)}%</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
+                    <div class="reg-area"><strong>名單：</strong>${regItems}</div>
+                    <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
+                    ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:8px; width:100%; border-radius:10px; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
+                </div>`;
+            }
+            list.innerHTML = html;
         }
-        list.innerHTML = html;
-    }
-
-    function sendData(payload, btnId) {
-        const btn = document.getElementById(btnId);
-        if (btn) { btn.innerText = "驗證權限並傳送中..."; btn.disabled = true; }
-
-        const adminActions = ['updateAnnouncement', 'createEvent', 'deleteEvent'];
-        if (adminActions.includes(payload.type)) {
-            payload.adminPassword = currentAdminPwd || sessionStorage.getItem('admin_pwd');
+    
+        function sendData(payload, btnId) {
+            const btn = document.getElementById(btnId);
+            const originalText = btn ? btn.innerText : "";
+            if (btn) { btn.innerText = "驗證權限並傳送中..."; btn.disabled = true; }
+    
+            const adminActions = ['updateAnnouncement', 'createEvent', 'deleteEvent'];
+            if (adminActions.includes(payload.type)) {
+                payload.adminPassword = currentAdminPwd || sessionStorage.getItem('admin_pwd');
+            }
+    
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            .then(() => {
+                // 優化：如果是更新公告，前端直接先變更視覺內容
+                if(payload.type === 'updateAnnouncement') {
+                    document.getElementById('announcement-text').innerText = payload.content;
+                }
+                alert("指令已發送！試算表同步約需 2-3 秒，頁面即將刷新。");
+                setTimeout(() => location.reload(), 2000);
+            })
+            .catch(() => {
+                alert("連線失敗");
+                if (btn) { btn.innerText = originalText; btn.disabled = false; }
+            });
         }
-
-        // 注意：no-cors 模式無法得知後端回傳 Fail 還是 Success
-        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-        .then(() => {
-            alert("指令已送出。若密碼正確，資料將於 2 秒後同步。");
-            setTimeout(() => location.reload(), 2000);
-        })
-        .catch(() => alert("連線異常"));
-    }
-
-    function checkAdmin() {
-        const savedPwd = sessionStorage.getItem('admin_pwd');
-        const pwd = savedPwd || prompt("請輸入管理密碼");
-        
-        if (pwd) {
-            // 前端初步預防（雖然真正的密碼在後端比對，但在前端加這行可減少誤按）
-            currentAdminPwd = pwd;
-            sessionStorage.setItem('admin_pwd', pwd);
-            isAdminMode = true; 
-            document.getElementById('header-tools').innerHTML = 
-                `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
-                 <button class="btn-sm" onclick="logout()">登出</button>`;
+    
+        function checkAdmin() {
+            const savedPwd = sessionStorage.getItem('admin_pwd');
+            const pwd = savedPwd || prompt("請輸入管理密碼");
             
-            // 登入後自動重刷資料以顯示刪除按鈕
+            if (pwd) {
+                currentAdminPwd = pwd;
+                sessionStorage.setItem('admin_pwd', pwd);
+                isAdminMode = true; 
+                document.getElementById('header-tools').innerHTML = 
+                    `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
+                     <button class="btn-sm" onclick="logout()">登出</button>`;
+                
+                fetchData();
+            }
+        }
+    
+        function logout() {
+            sessionStorage.removeItem('admin_pwd');
+            location.reload();
+        }
+    
+        function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
+        function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
+    
+        function openReg(id, title) { 
+            document.getElementById('reg-overlay').style.display = 'flex';
+            document.getElementById('reg-event-id').value = id;
+            document.getElementById('reg-title').innerText = title;
+        }
+    
+        function submitRegistration() {
+            const name = document.getElementById('reg-name').value.trim();
+            const balls = document.getElementById('reg-balls').value;
+            if(!name || balls === "") return alert("請填寫姓名與球數");
+            sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value }, "btn-reg");
+        }
+    
+        function updateAnn() {
+            const content = document.getElementById('admin-ann-input').value.trim();
+            if(!content) return alert("公告內容不能為空");
+            sendData({ type: 'updateAnnouncement', content: content }, "btn-ann");
+        }
+    
+        function addNewEvent() {
+            const title = document.getElementById('admin-title').value.trim();
+            const date = document.getElementById('admin-date').value;
+            const max = document.getElementById('admin-max').value;
+            const desc = document.getElementById('admin-desc').value;
+            if(!title || !date || !max) return alert("資訊不完整");
+            sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc }, "btn-admin");
+        }
+    
+        function deleteEvent(id) {
+            if(!confirm("確定要刪除嗎？刪除後無法復原。")) return;
+            sendData({ type: 'deleteEvent', eventId: id }, "header-tools"); // 這裡指向 header-tools 只是為了視覺回饋
+        }
+    
+        // 初始化
+        if (sessionStorage.getItem('admin_pwd')) {
+            checkAdmin();
+        } else {
             fetchData();
         }
-    }
-
-    function logout() {
-        sessionStorage.removeItem('admin_pwd');
-        location.reload();
-    }
-
-    function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
-    function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-
-    function openReg(id, title) { 
-        document.getElementById('reg-overlay').style.display = 'flex';
-        document.getElementById('reg-event-id').value = id;
-        document.getElementById('reg-title').innerText = title;
-    }
-
-    function submitRegistration() {
-        const name = document.getElementById('reg-name').value.trim();
-        const balls = document.getElementById('reg-balls').value;
-        if(!name || balls === "") return alert("請填寫姓名與球數");
-        sendData({ type: 'register', eventId: document.getElementById('reg-event-id').value, name, balls, note: document.getElementById('reg-note').value }, "btn-reg");
-    }
-
-    function updateAnn() {
-        const content = document.getElementById('admin-ann-input').value;
-        sendData({ type: 'updateAnnouncement', content: content }, "btn-ann");
-    }
-
-    function addNewEvent() {
-        const title = document.getElementById('admin-title').value;
-        const date = document.getElementById('admin-date').value;
-        const max = document.getElementById('admin-max').value;
-        const desc = document.getElementById('admin-desc').value;
-        if(!title || !date || !max) return alert("資訊不完整");
-        sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc }, "btn-admin");
-    }
-
-    function deleteEvent(id) {
-        if(!confirm("確定要刪除嗎？")) return;
-        sendData({ type: 'deleteEvent', eventId: id }, "btn-ann");
-    }
-
-    // 初始化
-    if (sessionStorage.getItem('admin_pwd')) {
-        checkAdmin();
-    } else {
-        fetchData();
-    }
 </script>
 </body>
 </html>

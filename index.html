@@ -370,9 +370,10 @@
     function createVoteCard(ev, allVotes) {
         const id = ev.event_id;
         const opts = ev.desc ? ev.desc.split(',') : [];
+        // 從所有投票資料中，找出屬於這一個 event_id 的紀錄
         const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === String(id)) : [];
         
-        // 1. 格式化截止日期（包含時分）
+        // 格式化截止日期與時間 (月/日 時:分)
         const deadlineDate = new Date(ev.date);
         const formattedDeadline = deadlineDate.toLocaleDateString('zh-TW', { 
             month: '2-digit', day: '2-digit', weekday: 'short' 
@@ -387,29 +388,33 @@
                 <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 12px;">
                     ⏱️ 截止時間：${formattedDeadline}
                 </div>
-                <div style="display: grid; gap: 12px;">`;
+                <div style="display: grid; gap: 10px;">`;
     
         opts.forEach(opt => {
-            // 篩選出投給這個選項的姓名
-            const voters = evVotes.filter(v => v[2] === opt).map(v => v[1]);
+            // 關鍵：從紀錄中抓出「投給這個日期」的所有人名
+            // 假設 v[1] 是姓名，v[2] 是選擇的日期字串
+            const votersForThisOpt = evVotes.filter(v => v[2] === opt).map(v => v[1]);
             
             html += `
-                <div class="poll-option-clean" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; transition:0.2s;">
-                    <div style="font-weight:700; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
+                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
+                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
+                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
                         📅 ${opt}
                     </div>
-                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        ${voters.length > 0 
-                            ? voters.map(name => `<span style="background:#edf2f7; color:var(--secondary); padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:600;">${name}</span>`).join('')
-                            : '<span style="color:#cbd5e0; font-size:0.75rem;">目前無人選擇</span>'
+                    <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                        ${votersForThisOpt.length > 0 
+                            ? votersForThisOpt.map(name => `
+                                <span style="background:#ebf8ff; color:var(--secondary); padding:3px 10px; border-radius:8px; font-size:0.8rem; font-weight:700; border: 1px solid #bee3f8;">
+                                    ${name}
+                                </span>`).join('')
+                            : '<span style="color:#cbd5e0; font-size:0.75rem; font-weight:500;">目前尚未有人選擇</span>'
                         }
                     </div>
                 </div>`;
         });
     
         html += `</div>
-                ${isAdminMode ? `<button class="btn-admin-del" onclick="deleteEvent('${id}')" style="margin-top:15px; width:100%; background:none; border:1px solid #fed7d7; color:var(--danger); padding:8px; border-radius:10px; cursor:pointer;">🗑️ 刪除此投票</button>` : ''}
+                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:15px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
     }

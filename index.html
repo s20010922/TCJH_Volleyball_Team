@@ -393,9 +393,15 @@
                 <div style="display: grid; gap: 10px;">`;
     
         opts.forEach(opt => {
-            // 【關鍵修復點】：使用 trim() 並確保字串化比對
+            // 取得乾淨的選項字串 (例如 "2026-02-10")
+            const targetOption = String(opt).trim();
+            
             const voters = evVotes
-                .filter(v => String(v[2]).trim() === String(opt).trim())
+                .filter(v => {
+                    const recordedChoice = String(v[2]).trim();
+                    // 強化比對：完全相等 OR 紀錄中包含選項字串 (處理日期時間格式)
+                    return recordedChoice === targetOption || recordedChoice.includes(targetOption);
+                })
                 .map(v => String(v[1]).trim());
             
             html += `

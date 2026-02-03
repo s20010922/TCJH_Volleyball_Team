@@ -341,12 +341,11 @@
         }
     }
 
-    // 1. 修改 renderAll 函數
+    // 1. 修改 renderAll 函數，確保傳入正確的 data 結構
     function renderAll(data) {
         const activeList = document.getElementById('event-list');
         const pastList = document.getElementById('past-list');
         
-        // 清空現有列表
         activeList.innerHTML = "";
         pastList.innerHTML = "";
     
@@ -354,8 +353,11 @@
             activeList.innerHTML = "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
         } else {
             data.events.forEach(ev => {
-                // 注意：後端傳回的是物件 {event_id, date, title, max, desc, status}
+                // 確保 event_id 為字串
+                const eid = String(ev.event_id).trim();
+                
                 if (ev.status === 'vote') {
+                    // 這裡傳入 data.votes (這是後端給的完整投票陣列)
                     activeList.innerHTML += createVoteCard(ev, data.votes);
                 } else if (ev.status === 'active') {
                     activeList.innerHTML += createCard(ev, data.regs, false);
@@ -366,13 +368,15 @@
         }
     }
     
-    // 2. 修改投票卡片函數 (對應物件格式)
+    // 2. 修改 createVoteCard 函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
-        const id = String(ev.event_id);
-        const opts = ev.desc ? ev.desc.split(',') : [];
+        const id = String(ev.event_id).trim();
+        // 取得選項陣列，並去除空白
+        const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()) : [];
         
-        // 關鍵：從 allVotes 過濾出該場次的投票
-        const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === id) : [];
+        // 從 allVotes 中找出屬於此活動的投票紀錄
+        // 後端格式：[event_id, name, choice]
+        const evVotes = Array.isArray(allVotes) ? allVotes.filter(v => String(v[0]).trim() === id) : [];
         
         const d = new Date(ev.date);
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
@@ -387,16 +391,16 @@
                 <div style="display: grid; gap: 10px;">`;
     
         opts.forEach(opt => {
-            const targetOpt = opt.trim();
-            // 修正點：GAS 回傳的 votes 結構為 [id, name, choice]
-            // 因此 v[2] 是選項內容，v[1] 是投票人姓名
-            const voters = evVotes.filter(v => String(v[2]).trim() === targetOpt).map(v => v[1]);
+            // 在該活動的投票中，篩選出選擇此選項(opt)的人名(v[1])
+            const voters = evVotes
+                .filter(v => String(v[2]).trim() === opt)
+                .map(v => String(v[1]).trim());
             
             html += `
-                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOpt}')" 
+                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
                      style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
                     <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
-                        📅 ${targetOpt}
+                        📅 ${opt}
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
                         ${voters.length > 0 
@@ -411,8 +415,7 @@
                 ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:15px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
-    }
-    
+    }    
     // 投票點擊觸發
     function handleVoteClick(id, title, choice) {
         // 開啟你已經寫好的 vote-overlay

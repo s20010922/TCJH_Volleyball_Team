@@ -445,17 +445,35 @@
         const mode = document.getElementById('admin-mode-select').value;
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
-
+    
+        const commonData = {
+            event_id: 'E' + Date.now(), // 這裡改成 event_id
+            title: title,
+            status: mode // 'active' 或 'vote'
+        };
+    
         if(mode === 'active') {
             const date = document.getElementById('admin-date').value;
             const max = document.getElementById('admin-max').value;
-            if(!date || !max) return alert("資訊不完整");
-            sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max: parseInt(max), desc: document.getElementById('admin-desc').value, status: 'active' });
+            if(!date || !max) return alert("請填寫日期與人數");
+            sendData({ 
+                ...commonData, 
+                type: 'createEvent', 
+                date: date, 
+                max: parseInt(max), 
+                desc: document.getElementById('admin-desc').value 
+            });
         } else {
             const deadline = document.getElementById('admin-deadline').value;
             const opts = Array.from(document.querySelectorAll('.vote-opt-input')).map(i => i.value).filter(v => v).join(',');
             if(!deadline || !opts) return alert("請填寫截止時間與至少一個日期選項");
-            sendData({ type: 'createEvent', id: 'E'+Date.now(), date: deadline, title, max: 0, desc: opts, status: 'vote' });
+            sendData({ 
+                ...commonData, 
+                type: 'createEvent', 
+                date: deadline, // 投票截止日存入 Date 欄位
+                max: 0, 
+                desc: opts // 選項存入 Desc 欄位
+            });
         }
     }
 

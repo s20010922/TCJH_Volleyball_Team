@@ -281,26 +281,44 @@
     }
 
     async function sendData(payload) {
-        document.getElementById('loading-overlay').style.display = 'flex';
+        const loader = document.getElementById('loading-overlay');
         try {
-            if (isAdminMode || payload.type === 'verify') payload.adminPassword = currentAdminPwd;
+            loader.style.display = 'flex';
             
-            // 解決連線失敗核心：使用 no-cors 確保 POST 請求能穿透 CORS
-            await fetch(GAS_URL, {
-                method: "POST",
-                mode: "no-cors", 
+            if (isAdminMode || payload.type === 'verify') {
+                payload.adminPassword = currentAdminPwd;
+            }
+    
+            // 驗證密碼時需要回傳值，不使用 no-cors
+            // 發布資料時若怕 CORS 失敗，才考慮切換模式
+            const fetchOptions = {
+                method: 'POST',
                 body: JSON.stringify(payload)
-            });
-
-            // 因為 no-cors 無法獲取回傳，我們顯示成功提示後自動刷新
-            alert("請求已送出，正在同步資料...");
-            closeOverlay();
-            setTimeout(() => { location.reload(); }, 1000);
-            
+            };
+    
+            const res = await fetch(GAS_URL, fetchOptions);
+            const result = await res.json();
+    
+            if (result.status === "success") {
+                if (payload.type === 'verify') {
+                    isAdminMode = true;
+                    sessionStorage.setItem('admin_pwd', currentAdminPwd);
+                    updateUIForAdmin();
+                    showCreate();
+                } else {
+                    alert("操作成功！");
+                    closeOverlay();
+                    await fetchData();
+                }
+            } else {
+                alert("失敗：" + result.message);
+            }
         } catch (e) {
-            alert("連線失敗，請檢查網路。");
+            console.error(e);
+            // 如果是因為 CORS 失敗，嘗試提醒使用者
+            alert("連線伺服器失敗，請確認 GAS 部署設定為「所有人」皆可存取。");
         } finally {
-            document.getElementById('loading-overlay').style.display = 'none';
+            loader.style.display = 'none';
         }
     }
 

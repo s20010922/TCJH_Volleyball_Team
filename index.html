@@ -40,14 +40,12 @@
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
         }
 
-        /* 側邊欄與遮罩 */
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; opacity: 0; transition: 0.3s; }
         .drawer-overlay.open { display: block; opacity: 1; }
         .drawer { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--white); z-index: 2001; box-shadow: -5px 0 25px rgba(0,0,0,0.15); transition: 0.3s; padding: 25px 20px; display: flex; flex-direction: column; }
         .drawer.open { right: 0; }
         .drawer-item { padding: 14px 15px; border-radius: 12px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 700; transition: 0.2s; color: var(--primary); }
 
-        /* 主要容器 */
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
         #loading-overlay { position: fixed; inset: 0; background: var(--white); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; }
         .vball-loader { font-size: 3.5rem; animation: spin 1.2s infinite linear; }
@@ -61,6 +59,7 @@
         
         .vote-badge { position: absolute; top: 20px; right: 20px; background: var(--purple); color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 800; }
         .card-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; }
+        .card-desc { font-size: 0.95rem; color: var(--gray); margin-bottom: 15px; line-height: 1.5; }
         .card-date { font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 8px; }
         .deadline-text { font-size: 0.8rem; color: var(--danger); font-weight: 700; margin-bottom: 12px; }
         
@@ -135,8 +134,9 @@
 <div id="cancel-overlay" class="overlay">
     <button style="width:80px; margin-bottom:20px; padding:8px; border-radius:10px; border:none; background:#eee;" onclick="closeOverlay()">← 返回</button>
     <h2 style="font-weight:900;">取消紀錄</h2>
+    <p style="color:var(--gray); font-size:0.9rem; margin-bottom:15px;">請輸入報名/投票時使用的完整姓名</p>
     <input type="hidden" id="cancel-event-id">
-    <input type="text" id="cancel-name" placeholder="請輸入原紀錄姓名">
+    <input type="text" id="cancel-name" placeholder="姓名">
     <button class="btn" style="background:var(--danger); color:white;" onclick="submitCancel()">確認取消</button>
 </div>
 
@@ -167,25 +167,7 @@
     let currentAdminPwd = sessionStorage.getItem('admin_pwd') || "";
     let cachedEvents = [];
 
-    function updateAdminUI() {
-        const isVote = document.getElementById('admin-is-vote').checked;
-        document.getElementById('admin-date-box').innerHTML = isVote ? 
-            `<input type="text" id="admin-date" placeholder="輸入日期選項 (用逗號隔開, 如: 02/10, 02/12)">` : 
-            `<input type="date" id="admin-date">`;
-        document.getElementById('admin-deadline-box').style.display = isVote ? 'block' : 'none';
-        document.getElementById('admin-post-btn').innerText = isVote ? '發起投票' : '發布場次';
-    }
-
-    function toggleDrawer(open) {
-        document.getElementById('drawer').classList.toggle('open', open);
-        document.getElementById('drawer-overlay').classList.toggle('open', open);
-    }
-
-    function showInstruction() {
-        toggleDrawer(false);
-        alert("【系統說明】\n1. 投票模式：請選擇您可以出席的時間，滑鼠移到進度條上可查看該日期已投票的名單。\n2. 報名模式：填寫姓名與球數即可完成報名。\n3. 系統結算：投票截止後將選出最高票日期，並清空紀錄供大家重新報名。");
-    }
-
+    // --- 初始化與資料讀取 ---
     async function fetchData() {
         try {
             const resp = await fetch(GAS_URL);
@@ -194,7 +176,7 @@
             document.getElementById('announcement-text').innerText = "📢 公告：" + data.announcement;
             renderAll(data);
             document.getElementById('loading-overlay').style.display = 'none';
-        } catch (e) { alert("連線失敗"); }
+        } catch (e) { alert("系統載入失敗，請稍後再試"); }
     }
 
     function renderAll(data) {
@@ -204,6 +186,7 @@
         pastList.innerHTML = data.pastEvents.length ? data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : "";
     }
 
+    // --- 核心繪製卡片 ---
     function createCard(ev, allRegs, isPast) {
         const [id, dateStr, title, max, desc, , isVote, deadline] = ev;
         const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
@@ -212,12 +195,14 @@
         let contentHtml = "";
 
         if (realIsVote) {
-            // --- 投票模式邏輯 ---
+            // 投票模式
             const options = String(dateStr).split(',').map(o => o.trim());
-            contentHtml = `<div class="deadline-text">投票截止：${deadline.replace('T', ' ')}</div>`;
+            const displayDeadline = deadline ? deadline.replace('T', ' ') : '未設定';
+            contentHtml = `<div class="deadline-text">投票截止：${displayDeadline}</div>`;
             
             options.forEach(opt => {
-                const voters = eventRegs.filter(r => r[2] === opt).map(r => r[1]);
+                // 修正：從合併後的資料中精確過濾投票選項
+                const voters = eventRegs.filter(r => String(r[2]).trim() === opt).map(r => r[1]);
                 const count = voters.length;
                 const percent = Math.min((count / max) * 100, 100);
                 
@@ -231,7 +216,7 @@
                     </div>`;
             });
         } else {
-            // --- 報名模式邏輯 ---
+            // 報名模式
             const d = new Date(dateStr);
             const formattedDate = isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
             const count = eventRegs.length;
@@ -251,7 +236,7 @@
         }
 
         return `
-            <div class="card ${isPast ? 'card-past' : ''}">
+            <div class="card">
                 ${realIsVote ? `<div class="vote-badge">🗳️ 投票模式</div>` : ''}
                 <div class="card-title">${title}</div>
                 <div class="card-desc">${desc}</div>
@@ -262,6 +247,7 @@
             </div>`;
     }
 
+    // --- UI 控制 ---
     function openReg(id) {
         const ev = cachedEvents.find(e => String(e[0]) === String(id));
         if(!ev) return;
@@ -274,7 +260,7 @@
         const dynamicArea = document.getElementById('reg-input-dynamic');
         if(realIsVote) {
             const options = String(ev[1]).split(',').map(s => s.trim());
-            let html = `<p style="font-size:0.85rem; font-weight:700; margin-bottom:5px;">請選擇一個日期：</p><select id="reg-balls">`;
+            let html = `<p style="font-size:0.85rem; font-weight:700; margin-bottom:5px;">請選擇您可以出席的日期：</p><select id="reg-balls">`;
             options.forEach(o => html += `<option value="${o}">${o}</option>`);
             html += `</select>`;
             dynamicArea.innerHTML = html;
@@ -283,9 +269,31 @@
         }
     }
 
+    function openCancel(id) {
+        document.getElementById('cancel-overlay').style.display = 'flex';
+        document.getElementById('cancel-event-id').value = id;
+    }
+
+    function toggleDrawer(open) {
+        document.getElementById('drawer').classList.toggle('open', open);
+        document.getElementById('drawer-overlay').classList.toggle('open', open);
+    }
+
+    function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
+
+    function updateAdminUI() {
+        const isVote = document.getElementById('admin-is-vote').checked;
+        document.getElementById('admin-date-box').innerHTML = isVote ? 
+            `<input type="text" id="admin-date" placeholder="輸入日期選項 (用逗號隔開, 如: 02/10, 02/12)">` : 
+            `<input type="date" id="admin-date">`;
+        document.getElementById('admin-deadline-box').style.display = isVote ? 'block' : 'none';
+    }
+
+    // --- 資料提交 ---
     async function sendData(payload) {
         document.getElementById('loading-overlay').style.display = 'flex';
         if (isAdminMode || payload.type === 'verify') payload.adminPassword = currentAdminPwd;
+        
         try {
             const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
@@ -298,23 +306,6 @@
         } catch (e) { location.reload(); }
     }
 
-    function checkAdmin() { 
-        toggleDrawer(false);
-        if(isAdminMode) return showCreate();
-        const p = prompt("請輸入管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
-    }
-
-    function updateUIForAdmin() { 
-        document.getElementById('drawer-admin-tools').innerHTML = `
-            <div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 管理員後台</div>
-            <div class="drawer-item" onclick="logout()">🚪 登出系統</div>
-        `;
-    }
-
-    function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
-    function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; }
-    function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    
     function submitRegistration() {
         const name = document.getElementById('reg-name').value.trim();
         const balls = document.getElementById('reg-balls').value;
@@ -327,9 +318,7 @@
         if(!name) return alert("請輸入姓名");
         sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name });
     }
-    
-    function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }); }
-    
+
     function addNewEvent() { 
         const isVote = document.getElementById('admin-is-vote').checked;
         const date = document.getElementById('admin-date').value;
@@ -339,9 +328,30 @@
         if(!date || !title || !max) return alert("資訊填寫不完整");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc: document.getElementById('admin-desc').value, isVote, deadline }); 
     }
-    
-    function deleteEvent(id) { if(confirm("確定刪除此活動？")) sendData({ type: 'deleteEvent', eventId: id }); }
 
+    function updateAnn() { sendData({ type: 'updateAnnouncement', content: document.getElementById('admin-ann-input').value }); }
+    function deleteEvent(id) { if(confirm("確定刪除此活動？相關報名紀錄也會一併消失。")) sendData({ type: 'deleteEvent', eventId: id }); }
+
+    // --- 管理員權限 ---
+    function checkAdmin() { 
+        toggleDrawer(false);
+        if(isAdminMode) return showCreate();
+        const p = prompt("請輸入管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); }
+    }
+    function updateUIForAdmin() { 
+        document.getElementById('drawer-admin-tools').innerHTML = `
+            <div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 管理員後台</div>
+            <div class="drawer-item" onclick="logout()">🚪 登出系統</div>
+        `;
+    }
+    function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
+    function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; }
+    function showInstruction() {
+        toggleDrawer(false);
+        alert("【系統說明】\n1. 投票模式：請選擇您可以出席的時間，滑鼠移到進度條上可查看該日期已投票的名單。\n2. 報名模式：填寫姓名與球數即可完成報名。\n3. 系統結算：投票截止後將選出最高票日期，並自動清空投票紀錄，轉換為正式報名場次。");
+    }
+
+    // --- 啟動 ---
     (async () => {
         if (currentAdminPwd) {
             try {

@@ -234,7 +234,7 @@
 
     async function fetchData() {
         document.getElementById('loading-overlay').style.display = 'flex';
-        document.getElementById('loading-text').innerText = "正在接球中...";
+        document.getElementById('loading-text').innerText = "正在撿球中...";
         try {
             const resp = await fetch(GAS_URL);
             const data = await resp.json();
@@ -295,7 +295,7 @@
             // 1. 禁用所有按鈕並顯示 Loading
             buttons.forEach(b => b.disabled = true);
             loader.style.display = 'flex';
-            loadText.innerText = "正在處理中...";
+            loadText.innerText = "正在撿球中...";
 
             // 2. 注入管理密碼
             if (isAdminMode || payload.type === 'verify') {

@@ -96,7 +96,6 @@
         }
         .drawer-item:active { background: #f0f4f8; }
 
-        /* 按鈕禁用樣式 */
         button:disabled {
             background-color: var(--gray) !important;
             box-shadow: none !important;
@@ -256,8 +255,9 @@
     }
 
     function createCard(ev, allRegs, isPast) {
-        const [id, date, title, max, desc] = ev;
-        const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
+        // 解構賦值對應統一後的小寫欄位：event_id, date, title, max, desc
+        const [event_id, date, title, max, desc] = ev;
+        const eventRegs = allRegs.filter(r => String(r[0]) === String(event_id));
         const count = eventRegs.length;
         const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
         const progress = Math.min((count / max) * 100, 100);
@@ -279,30 +279,26 @@
                 <div class="reg-area">
                     ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
                 </div>
-                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${title}')">立即報名</button>`}
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
-                ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">欲取消報名請點擊此處</p>` : ''}
+                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${event_id}', '${title}')">立即報名</button>`}
+                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${event_id}')">🗑️ 刪除此場次</button>` : ''}
+                ${!isPast ? `<p onclick="openCancel('${event_id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">欲取消報名請點擊此處</p>` : ''}
             </div>`;
     }
 
-    // [優化] 集中管理 API 發送邏輯
     async function sendData(payload) {
         const loader = document.getElementById('loading-overlay');
         const loadText = document.getElementById('loading-text');
         const buttons = document.querySelectorAll('button');
 
         try {
-            // 1. 禁用所有按鈕並顯示 Loading
             buttons.forEach(b => b.disabled = true);
             loader.style.display = 'flex';
             loadText.innerText = "正在撿球中...";
 
-            // 2. 注入管理密碼
             if (isAdminMode || payload.type === 'verify') {
                 payload.adminPassword = currentAdminPwd;
             }
 
-            // 3. 發送請求
             const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
 
@@ -313,11 +309,10 @@
                     updateUIForAdmin();
                     showCreate();
                 } else {
-                    // 非驗證動作成功後，給予提示並刷新資料
                     if(payload.type === 'register') alert("🎉 報名成功！");
                     if(payload.type === 'cancelRegistration') alert("✅ 已取消報名");
                     closeOverlay();
-                    await fetchData(); // 局部刷新
+                    await fetchData();
                 }
             } else {
                 alert("❌ 操作失敗：" + result.message);
@@ -326,7 +321,6 @@
             console.error(e);
             alert("🌐 網路錯誤或連線逾時，請檢查網路後再試");
         } finally {
-            // 4. 恢復按鈕狀態並隱藏 Loading
             buttons.forEach(b => b.disabled = false);
             loader.style.display = 'none';
         }
@@ -349,14 +343,16 @@
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
     function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; }
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
-    function openReg(id, title) { 
+    
+    function openReg(event_id, title) { 
         document.getElementById('reg-overlay').style.display = 'flex'; 
-        document.getElementById('reg-event-id').value = id; 
+        document.getElementById('reg-event-id').value = event_id; 
         document.getElementById('reg-title').innerText = '報名：' + title; 
     }
-    function openCancel(eventId) { 
+    
+    function openCancel(event_id) { 
         document.getElementById('cancel-overlay').style.display = 'flex'; 
-        document.getElementById('cancel-event-id').value = eventId; 
+        document.getElementById('cancel-event-id').value = event_id; 
     }
     
     function submitRegistration() {
@@ -368,7 +364,7 @@
         
         sendData({ 
             type: 'register', 
-            eventId: document.getElementById('reg-event-id').value, 
+            event_id: document.getElementById('reg-event-id').value, 
             name, 
             balls: parseInt(balls), 
             note: document.getElementById('reg-note').value 
@@ -378,7 +374,11 @@
     function submitCancel() {
         const name = document.getElementById('cancel-name').value.trim();
         if(!name) return alert("請輸入報名姓名");
-        sendData({ type: 'cancelRegistration', eventId: document.getElementById('cancel-event-id').value, name });
+        sendData({ 
+            type: 'cancelRegistration', 
+            event_id: document.getElementById('cancel-event-id').value, 
+            name 
+        });
     }
     
     function updateAnn() { 
@@ -392,17 +392,23 @@
         const title = document.getElementById('admin-title').value.trim();
         const max = document.getElementById('admin-max').value;
         if(!date || !title || !max) return alert("請填寫完整場次資訊");
-        sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max: parseInt(max), desc: document.getElementById('admin-desc').value }); 
+        sendData({ 
+            type: 'createEvent', 
+            event_id: 'E'+Date.now(), 
+            date, 
+            title, 
+            max: parseInt(max), 
+            desc: document.getElementById('admin-desc').value 
+        }); 
     }
     
-    function deleteEvent(id) { 
+    function deleteEvent(event_id) { 
         if(confirm("確定要刪除這場練習嗎？所有報名紀錄也會同步刪除。")) {
-            sendData({ type: 'deleteEvent', eventId: id }); 
+            sendData({ type: 'deleteEvent', event_id: event_id }); 
         }
     }
 
     (async () => {
-        // 初始化若有密碼則背景驗證
         if (currentAdminPwd) {
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({type:'verify', adminPassword: currentAdminPwd}) });

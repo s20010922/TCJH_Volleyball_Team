@@ -173,19 +173,21 @@
         }
     
         function checkAdmin() {
-            const savedPwd = sessionStorage.getItem('admin_pwd');
-            const pwd = savedPwd || prompt("請輸入管理密碼");
+            const pwd = prompt("請輸入管理密碼");
+            if (pwd === null) return; // 使用者按取消
+        
+            // 這裡我們不直接設 isAdminMode = true
+            // 而是先存起來，等發送請求時讓後端驗證
+            currentAdminPwd = pwd;
             
-            if (pwd) {
-                currentAdminPwd = pwd;
-                sessionStorage.setItem('admin_pwd', pwd);
-                isAdminMode = true; 
-                document.getElementById('header-tools').innerHTML = 
-                    `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
-                     <button class="btn-sm" onclick="logout()">登出</button>`;
-                
-                fetchData();
-            }
+            // 為了給你視覺回饋，我們暫時開啟介面
+            // 但如果後端密碼錯了，接下來的動作(更新公告、刪除)都不會成功
+            isAdminMode = true; 
+            sessionStorage.setItem('admin_pwd', pwd);
+            document.getElementById('header-tools').innerHTML = 
+                `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
+                 <button class="btn-sm" onclick="logout()">登出</button>`;
+            fetchData();
         }
     
         function logout() {

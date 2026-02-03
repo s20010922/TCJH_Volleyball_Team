@@ -334,76 +334,88 @@
         }
     }
 
+    // 1. 修改 renderAll 函數
     function renderAll(data) {
         const activeList = document.getElementById('event-list');
         const pastList = document.getElementById('past-list');
         
-        // 渲染正在進行的 (包含報名與投票)
-        activeList.innerHTML = data.events.length ? data.events.map(ev => {
-            return ev[5] === 'vote' ? createVoteCard(ev, data.regs) : createCard(ev, data.regs, false);
-        }).join('') : "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
-
-        // 渲染歷史紀錄
-        pastList.innerHTML = data.pastEvents.length ? data.pastEvents.map(ev => createCard(ev, data.regs, true)).join('') : "<p style='padding:20px; color:var(--gray);'>尚無歷史紀錄</p>";
+        // 清空現有列表
+        activeList.innerHTML = "";
+        pastList.innerHTML = "";
+    
+        if (!data.events || data.events.length === 0) {
+            activeList.innerHTML = "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
+        } else {
+            data.events.forEach(ev => {
+                // 注意：後端傳回的是物件 {event_id, date, title, max, desc, status}
+                if (ev.status === 'vote') {
+                    activeList.innerHTML += createVoteCard(ev, data.votes);
+                } else if (ev.status === 'active') {
+                    activeList.innerHTML += createCard(ev, data.regs, false);
+                } else {
+                    pastList.innerHTML += createCard(ev, data.regs, true);
+                }
+            });
+        }
     }
-
-    // 建立投票卡片 (整合至 Grid)
-    function createVoteCard(ev, allRegs) {
-        const [id, deadline, title, , optionsStr] = ev;
-        const opts = optionsStr.split(',');
-        const evVotes = allRegs.filter(r => String(r[0]) === String(id));
+    
+    // 2. 修改投票卡片函數 (對應物件格式)
+    function createVoteCard(ev, allVotes) {
+        const id = ev.event_id;
+        const opts = ev.desc ? ev.desc.split(',') : []; // 投票選項存在 desc 欄位
+        const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === String(id)) : [];
         
         let html = `
             <div class="card" style="border: 2px solid var(--accent);">
-                <div class="badge-vote">投票截止：${new Date(deadline).toLocaleString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>
-                <div class="card-title">${title}</div>
+                <div class="badge-vote">🗳️ 意願調查中</div>
+                <div class="card-title">${ev.title}</div>
                 <div style="margin: 15px 0;">`;
-
+    
         opts.forEach(opt => {
             const count = evVotes.filter(v => v[2] === opt).length;
             const percent = evVotes.length ? (count / evVotes.length * 100) : 0;
             html += `
-                <div class="poll-option" onclick="openVote('${id}', '${title}', '${opt}')">
+                <div class="poll-option" onclick="openVote('${id}', '${ev.title}', '${opt}')">
                     <div class="poll-bar-bg">
                         <div class="poll-bar-fill" style="width:${percent}%"></div>
                         <div class="poll-text"><span>📅 ${opt}</span><span>${count} 票</span></div>
                     </div>
                 </div>`;
         });
-
+    
         html += `</div>
-                <div style="font-size:0.75rem; color:var(--gray); text-align:center;">點擊選項即可進行投票</div>
+                <p style="font-size:0.75rem; color:var(--gray); text-align:center;">點擊日期選項即可投票</p>
                 ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
     }
-
-    // 建立報名卡片 (原本功能完全保留)
+    
+    // 3. 修改報名卡片函數 (對應物件格式)
     function createCard(ev, allRegs, isPast) {
-        const [id, date, title, max, desc] = ev;
-        const eventRegs = allRegs.filter(r => String(r[0]) === String(id));
+        const id = ev.event_id;
+        const eventRegs = allRegs ? allRegs.filter(r => String(r[0]) === String(id)) : [];
         const count = eventRegs.length;
         const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
-        const progress = Math.min((count / max) * 100, 100);
-        const formattedDate = new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+        const progress = Math.min((count / ev.max) * 100, 100);
+        const formattedDate = new Date(ev.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
                 
         return `
             <div class="card ${isPast ? 'card-past' : ''}">
-                <div class="card-title">${title}</div>
+                <div class="card-title">${ev.title}</div>
                 <div class="card-date">📅 ${formattedDate}</div>
-                <div class="card-desc">${desc}</div>
+                <div class="card-desc">${ev.desc}</div>
                 <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>報名進度</span>
-                    <span>${count} / ${max} 人</span>
+                    <span>${count} / ${ev.max} 人</span>
                 </div>
                 <div style="background:#edf2f7; height:10px; border-radius:5px; margin-bottom:10px; overflow:hidden;">
-                    <div style="width:${progress}%; height:100%; background:${count>=max?'var(--danger)':'var(--secondary)'}; transition:width 0.8s ease-out;"></div>
+                    <div style="width:${progress}%; height:100%; background:${count>=ev.max?'var(--danger)':'var(--secondary)'}; transition:width 0.8s ease-out;"></div>
                 </div>
                 <div class="ball-count-badge">🏐 當前全隊總球數：${totalBalls}</div>
                 <div class="reg-area">
                     ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
                 </div>
-                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${title}')">立即報名</button>`}
+                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${ev.title}')">立即報名</button>`}
                 ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
                 ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">欲取消報名請點擊此處</p>` : ''}
             </div>`;

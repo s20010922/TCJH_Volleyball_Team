@@ -147,6 +147,11 @@
         input, textarea, select { font-family: inherit; width: 100%; padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; margin-bottom: 12px; font-size: 1rem; outline: none; transition: 0.2s; }
         input:focus { border-color: var(--accent); background: #fffaf0; }
         .admin-label { font-size: 0.85rem; font-weight: 800; color: var(--secondary); margin: 5px 0; display: block; }
+        .poll-option-clean:active {
+            background-color: #fffaf0 !important;
+            border-color: var(--accent) !important;
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -367,38 +372,44 @@
         const opts = ev.desc ? ev.desc.split(',') : [];
         const evVotes = allVotes ? allVotes.filter(v => String(v[0]) === String(id)) : [];
         
-        // 格式化截止日期
-        const deadline = new Date(ev.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
+        // 1. 格式化截止日期（包含時分）
+        const deadlineDate = new Date(ev.date);
+        const formattedDeadline = deadlineDate.toLocaleDateString('zh-TW', { 
+            month: '2-digit', day: '2-digit', weekday: 'short' 
+        }) + " " + deadlineDate.toLocaleTimeString('zh-TW', { 
+            hour: '2-digit', minute: '2-digit', hour12: false 
+        });
     
         let html = `
             <div class="card" style="border: 2px solid var(--accent); position: relative;">
                 <div class="badge-vote">🗳️ 意願調查中</div>
                 <div class="card-title">${ev.title}</div>
-                <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">
-                    ⏱️ 投票截止：${deadline}
+                <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 12px;">
+                    ⏱️ 截止時間：${formattedDeadline}
                 </div>
-                <div style="background: #fffaf3; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                    <p style="font-size: 0.8rem; margin: 0 0 8px 0; color: var(--gray);">預計徵集人數：${ev.max} 人</p>
-                    <div style="font-size: 0.9rem; font-weight: 500;">已有 ${evVotes.length} 人參與投票</div>
-                </div>
-                <div style="display: grid; gap: 8px;">`;
+                <div style="display: grid; gap: 12px;">`;
     
         opts.forEach(opt => {
-            const count = evVotes.filter(v => v[2] === opt).length;
-            const percent = evVotes.length ? (count / evVotes.length * 100) : 0;
+            // 篩選出投給這個選項的姓名
+            const voters = evVotes.filter(v => v[2] === opt).map(v => v[1]);
+            
             html += `
-                <div class="poll-option" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
-                     style="cursor:pointer; position:relative; background:#edf2f7; border-radius:8px; overflow:hidden; height:40px;">
-                    <div style="position:absolute; left:0; top:0; height:100%; width:${percent}%; background:#fbd38d; transition:width 0.5s;"></div>
-                    <div style="position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; padding:0 12px; height:100%; font-size:0.9rem;">
-                        <span>📅 ${opt}</span>
-                        <span style="font-weight:700;">${count} 票</span>
+                <div class="poll-option-clean" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
+                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; transition:0.2s;">
+                    <div style="font-weight:700; color:var(--primary); font-size:0.95rem; margin-bottom:8px;">
+                        📅 ${opt}
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        ${voters.length > 0 
+                            ? voters.map(name => `<span style="background:#edf2f7; color:var(--secondary); padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:600;">${name}</span>`).join('')
+                            : '<span style="color:#cbd5e0; font-size:0.75rem;">目前無人選擇</span>'
+                        }
                     </div>
                 </div>`;
         });
     
         html += `</div>
-                ${isAdminMode ? `<button class="btn-admin-del" onclick="deleteEvent('${id}')" style="margin-top:15px; width:100%;">🗑️ 刪除此投票</button>` : ''}
+                ${isAdminMode ? `<button class="btn-admin-del" onclick="deleteEvent('${id}')" style="margin-top:15px; width:100%; background:none; border:1px solid #fed7d7; color:var(--danger); padding:8px; border-radius:10px; cursor:pointer;">🗑️ 刪除此投票</button>` : ''}
             </div>`;
         return html;
     }

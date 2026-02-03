@@ -12,29 +12,33 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--primary); }
         header { background: var(--primary); color: var(--white); padding: 0 20px; height: 60px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; }
+        .btn-sm { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; margin-left: 5px; }
         .app-container { max-width: 900px; margin: 0 auto; padding: 15px; }
         
+        /* 📢 公告欄樣式 */
         .announcement-card { background: #fffaf0; border: 2px solid var(--accent); border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; }
-        .announcement-content { font-size: 0.9rem; color: #744210; white-space: pre-wrap; line-height: 1.6; }
+        .announcement-title { font-weight: 800; color: #c05621; margin-bottom: 5px; display: flex; align-items: center; }
+        .announcement-content { font-size: 0.95rem; color: #744210; white-space: pre-wrap; line-height: 1.6; min-height: 30px; }
 
         #event-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .card { background: var(--white); border-radius: 20px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .card-desc { font-size: 0.85rem; color: #4a5568; background: #f8fafc; padding: 10px; border-radius: 10px; margin: 10px 0; white-space: pre-wrap; border-left: 3px solid var(--accent); }
         
+        /* 👥 報名名單區 */
         .reg-area { background: #f1f5f9; border-radius: 10px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
         .reg-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0; }
         .reg-note { font-size: 0.75rem; color: #718096; display: block; }
 
         .progress-bar-bg { background: #edf2f7; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
         .progress-bar-fill { height: 100%; transition: width 0.5s; }
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
         .btn-accent { background: var(--accent); color: var(--primary); }
+        .btn-accent:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
-        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; outline: none; }
+        input:focus, textarea:focus { border-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -47,9 +51,10 @@
 <div class="app-container">
     <div id="announcement-area" class="announcement-card">
         <div class="announcement-title">📢 隊內公告</div>
-        <div id="announcement-text" class="announcement-content">連線中...</div>
+        <div id="announcement-text" class="announcement-content">載入中...</div>
     </div>
-    <h3 style="border-left:5px solid var(--accent); padding-left:10px;">即將進行的練習</h3>
+
+    <h3 style="border-left:5px solid var(--accent); padding-left:10px; margin-bottom:15px;">即將進行的練習</h3>
     <div id="event-list">⏳ 正在與 Google 同步資料...</div>
 </div>
 
@@ -74,35 +79,48 @@
         <input type="hidden" id="reg-event-id">
         <input type="text" id="reg-name" placeholder="你的姓名">
         <input type="number" id="reg-balls" placeholder="攜帶球數">
-        <textarea id="reg-note" rows="3" placeholder="備註 (晚到、早退、只想打攻擊不要來...)"></textarea>
+        <textarea id="reg-note" rows="3" placeholder="備註 (晚到、早退、特殊說明...)"></textarea>
         <button class="btn btn-accent" id="btn-reg" onclick="submitRegistration()">確認提交報名</button>
     </div>
 </div>
 
 <script>
+    // ⚠️ 請確保此網址為「新版本」部署後的結果
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
+    
     let isAdminMode = false;
     let currentAdminPwd = "";
 
+    // 核心抓取資料函式
     async function fetchData() {
         try {
             const resp = await fetch(GAS_URL);
+            if (!resp.ok) throw new Error("網路回應不正確");
             const data = await resp.json();
             
-            // 預設內容包含你之前的吩咐
-            const defaultAnn = "🚨 珍惜球場公物：損壞請務必當事人在群組通知。\n🏐 訓練態度：目標認真紮實，謝絕純攻擊手。";
-            document.getElementById('announcement-text').innerText = data.announcement || defaultAnn;
-            document.getElementById('admin-ann-input').value = data.announcement || defaultAnn;
+            // 公告欄顯示邏輯
+            const announcementText = document.getElementById('announcement-text');
+            const announcementInput = document.getElementById('admin-ann-input');
+            
+            // 優先吃 Config 資料，若無則顯示預設
+            const content = data.announcement || "🚨 珍惜球場公物：損壞請務必通報。\n🏐 訓練態度：謝絕純攻擊手，不會沒關係，我們會教。";
+            announcementText.innerText = content;
+            announcementInput.value = content;
 
             renderEvents(data.events, data.regs);
         } catch (e) {
-            document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請檢查 GAS 網址是否正確。";
+            console.error(e);
+            document.getElementById('announcement-text').innerText = "無法載入公告";
+            document.getElementById('event-list').innerHTML = "⚠️ 連線失敗，請確認 GAS 網址或 Google 權限是否設為「所有人」。";
         }
     }
 
     function renderEvents(events, regs) {
         const list = document.getElementById('event-list');
-        if (!events || events.length <= 1) { list.innerHTML = "目前沒有安排練習。"; return; }
+        if (!events || events.length <= 1) { 
+            list.innerHTML = "<p style='color:#a0aec0;'>目前沒有安排任何練習場次。</p>"; 
+            return; 
+        }
         
         let html = '';
         for (let i = 1; i < events.length; i++) {
@@ -116,20 +134,20 @@
                     <div><b>👤 ${r[1]}</b> <span class="reg-note">${r[3]||''}</span></div>
                     <div style="color:var(--secondary)">🏐 ${r[2]}</div>
                   </div>`).join('')
-                : '<div style="color:#a0aec0; text-align:center;">尚無人報名</div>';
+                : '<div style="color:#a0aec0; text-align:center; padding:10px;">尚未有人報名</div>';
 
             html += `<div class="card">
                 <div class="card-title">${title}</div>
-                <div style="font-size:0.8rem; color:var(--secondary);">📅 ${String(date).split('T')[0]}</div>
+                <div style="font-size:0.8rem; color:var(--secondary); margin-bottom:10px;">📅 ${String(date).split('T')[0]}</div>
                 <div class="card-desc">${desc}</div>
-                <div style="font-size:0.75rem; font-weight:bold; display:flex; justify-content:space-between;">
-                    <span>目前人數 ${count}/${max}</span>
+                <div style="font-size:0.75rem; font-weight:bold; display:flex; justify-content:space-between; margin-top:15px;">
+                    <span>目前人數 ${count} / ${max}</span>
                     <span>${Math.round(progress)}%</span>
                 </div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%; background:${count>=max?'var(--danger)':'var(--secondary)'}"></div></div>
                 <div class="reg-area"><strong>名單：</strong>${regItems}</div>
-                <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 取消報名</button>
-                ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:5px; width:100%; border-radius:8px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
+                <button class="btn btn-accent" onclick="openReg('${id}', '${title}')">報名 / 修改</button>
+                ${isAdminMode ? `<button style="margin-top:10px; background:none; border:1px solid var(--danger); color:var(--danger); font-size:0.7rem; padding:8px; width:100%; border-radius:10px; cursor:pointer;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
             </div>`;
         }
         list.innerHTML = html;
@@ -137,44 +155,44 @@
 
     function sendData(payload, btnId) {
         const btn = document.getElementById(btnId);
-        btn.innerText = "傳送中...";
-        btn.disabled = true;
+        if (btn) { btn.innerText = "傳送中..."; btn.disabled = true; }
 
-        // 若是管理操作，自動注入密碼
+        // 自動從暫存或變數補上管理密碼
         const adminActions = ['updateAnnouncement', 'createEvent', 'deleteEvent'];
         if (adminActions.includes(payload.type)) {
-            payload.adminPassword = currentAdminPwd;
+            payload.adminPassword = currentAdminPwd || sessionStorage.getItem('admin_pwd');
         }
 
-        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-        
-        setTimeout(() => {
-            alert("指令已發送！網頁將於 2 秒後重新整理。");
-            location.reload();
-        }, 2000);
+        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+        .then(() => {
+            alert("指令已送出！資料同步中...");
+            setTimeout(() => location.reload(), 1500);
+        })
+        .catch(() => alert("傳送失敗，請檢查網路。"));
     }
 
     function checkAdmin() {
-        const pwd = prompt("請輸入管理密碼");
+        const savedPwd = sessionStorage.getItem('admin_pwd');
+        const pwd = savedPwd || prompt("請輸入管理密碼");
+        
         if (pwd) {
             currentAdminPwd = pwd;
+            sessionStorage.setItem('admin_pwd', pwd); // 記憶登入狀態
             isAdminMode = true; 
             document.getElementById('header-tools').innerHTML = 
                 `<button class="btn-sm" style="background:var(--accent); color:var(--primary);" onclick="showCreate()">⚙️ 管理介面</button>
-                 <button class="btn-sm" onclick="location.reload()">登出</button>`;
+                 <button class="btn-sm" onclick="logout()">登出</button>`;
             fetchData();
         }
     }
 
-    function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
-    
-    function closeOverlay() { 
-        document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); 
-        // 離開時清空輸入，防止下次打開還有舊資料
-        document.getElementById('reg-name').value = "";
-        document.getElementById('reg-balls').value = "";
-        document.getElementById('reg-note').value = "";
+    function logout() {
+        sessionStorage.removeItem('admin_pwd');
+        location.reload();
     }
+
+    function showCreate() { document.getElementById('admin-overlay').style.display = 'flex'; }
+    function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
 
     function openReg(id, title) { 
         document.getElementById('reg-overlay').style.display = 'flex';
@@ -199,16 +217,21 @@
         const date = document.getElementById('admin-date').value;
         const max = document.getElementById('admin-max').value;
         const desc = document.getElementById('admin-desc').value;
-        if(!title || !date || !max) return alert("資訊不完整");
+        if(!title || !date || !max) return alert("資訊不完整 (日期、標題、人數為必填)");
         sendData({ type: 'createEvent', id: 'E'+Date.now(), date, title, max, desc }, "btn-admin");
     }
 
     function deleteEvent(id) {
-        if(!confirm("確定要刪除這場練習嗎？所有相關報名也會被刪除。")) return;
-        sendData({ type: 'deleteEvent', eventId: id }, "btn-admin");
+        if(!confirm("確定要刪除這場練習嗎？所有人的報名資料也會一併消失。")) return;
+        sendData({ type: 'deleteEvent', eventId: id }, "btn-ann"); // 借用 btn-ann 顯示狀態
     }
 
-    fetchData();
+    // 初始化：檢查是否曾登入過
+    if (sessionStorage.getItem('admin_pwd')) {
+        checkAdmin();
+    } else {
+        fetchData();
+    }
 </script>
 </body>
 </html>

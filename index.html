@@ -419,10 +419,13 @@
         const d = new Date(ev.date);
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     
+        // 這裡修正：將邏輯判斷包在 ${} 裡面，或者先定義好變數
+        const maxVoteInfo = ev.max > 0 ? ` (預計徵求 ${ev.max} 人)` : "";
+        
         let html = `
             <div class="card" style="border: 2px solid var(--accent); position: relative; padding: 22px;">
                 <div class="badge-vote">🗳️ 意願調查中</div>
-                <div class="card-title">${ev.title}</div>
+                <div class="card-title">${ev.title}${maxVoteInfo}</div> 
                 <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
                     ⏱️ 截止時間：${formattedDeadline}
                 </div>

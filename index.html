@@ -399,15 +399,9 @@
     // 2. 修改 createVoteCard 函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
         const id = String(ev.event_id).trim();
-        // 取得選項陣列，並確實修剪空格
         const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()).filter(o => o !== "") : [];
-        
-        // 確保 allVotes 是陣列
         const safeVotes = Array.isArray(allVotes) ? allVotes : [];
-        
-        // 找出屬於此活動的所有投票紀錄
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
-        
         const d = new Date(ev.date);
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     
@@ -418,46 +412,30 @@
                 <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
                     ⏱️ 截止時間：${formattedDeadline}
                 </div>
-                <div style="display: grid; gap: 10px;">`;
+                <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
     
         opts.forEach(opt => {
-            // 取得乾淨的選項字串 (例如 "2026-02-10")
             const targetOption = String(opt).trim();
-            
-            const voters = evVotes
-                .filter(v => {
-                    const recordedChoice = String(v[2]).trim();
-                    // 強化比對：完全相等 OR 紀錄中包含選項字串 (處理日期時間格式)
-                    return recordedChoice === targetOption || recordedChoice.includes(targetOption);
-                })
-                .map(v => String(v[1]).trim());
-            
+            const voters = evVotes.filter(v => String(v[2]).trim() === targetOption || String(v[2]).trim().includes(targetOption)).map(v => String(v[1]).trim());
             html += `
                 <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer; transition: 0.2s;"
-                     onmouseover="this.style.borderColor='var(--accent)'" 
-                     onmouseout="this.style.borderColor='#e2e8f0'">
+                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
                     <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
                         <span>📅 ${opt}</span>
                         <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        ${voters.length > 0 
-                            ? voters.map(name => `<span style="background:#ebf8ff; color:var(--secondary); padding:2px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border: 1px solid #bee3f8;">${name}</span>`).join('')
-                            : '<span style="color:#cbd5e0; font-size:0.75rem;">目前無人選擇</span>'
-                        }
+                        ${voters.length > 0 ? voters.map(name => `<span style="background:#ebf8ff; color:var(--secondary); padding:2px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border: 1px solid #bee3f8;">${name}</span>`).join('') : '<span style="color:#cbd5e0; font-size:0.75rem;">點擊參與投票</span>'}
                     </div>
                 </div>`;
         });
     
         html += `</div>
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:15px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
+                <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
+                    ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
+                </div>
             </div>`;
-        html += `
-            <p onclick="openCancelVote('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">
-                投錯日期了？點此撤回投票
-            </p>
-        `;
         return html;
     }
     
@@ -475,7 +453,7 @@
         const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
         const progress = Math.min((count / ev.max) * 100, 100);
         const formattedDate = new Date(ev.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
-                
+                    
         return `
             <div class="card ${isPast ? 'card-past' : ''}">
                 <div class="card-title">${ev.title}</div>
@@ -492,9 +470,12 @@
                 <div class="reg-area">
                     ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
                 </div>
-                ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${ev.title}')">立即報名</button>`}
-                ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
-                ${!isPast ? `<p onclick="openCancel('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">欲取消報名請點擊此處</p>` : ''}
+                
+                <div class="card-actions" style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
+                    ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${ev.title}')">立即報名</button>`}
+                    ${!isPast ? `<button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancel('${id}')">取消我的報名</button>` : ''}
+                    ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
+                </div>
             </div>`;
     }
 

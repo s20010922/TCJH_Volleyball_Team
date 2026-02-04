@@ -199,7 +199,7 @@
     <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
     
     <h3 style="font-weight:900;">📢 更新公告</h3>
-    <textarea id="admin-ann-input" rows="2"></textarea>
+    <textarea id="admin-ann-input" rows="4"></textarea>
     <button class="btn btn-accent" style="margin-bottom:20px;" onclick="updateAnn()">發布新公告</button>
     
     <hr style="opacity:0.1; margin: 20px 0;">
@@ -291,17 +291,23 @@
         const mode = document.getElementById('admin-mode-select').value;
         document.getElementById('admin-ui-active').style.display = (mode === 'active' ? 'block' : 'none');
         document.getElementById('admin-ui-vote').style.display = (mode === 'vote' ? 'block' : 'none');
-        if(mode === 'vote') renderVoteInputs();
+        if(mode === 'vote') {
+                renderVoteInputs();
+        }
     }
 
     function renderVoteInputs() {
         const count = document.getElementById('admin-vote-count').value;
         const area = document.getElementById('admin-vote-options-area');
-        area.innerHTML = '<label class="admin-label">選項日期 (年月日)</label>';
-        for(let i=0; i<count; i++) {
-            area.innerHTML += `<input type="date" class="vote-opt-input">`;
+        // 先清空並加上標題
+        area.innerHTML = '<label class="admin-label">選項日期 (請填寫或選擇日期)</label>';
+        
+        for(let i = 0; i < count; i++) {
+            // 這裡建議加上 type="date" 或 type="text"，確保樣式一致
+            area.innerHTML += `<input type="date" class="vote-opt-input" style="margin-bottom: 8px;">`;
         }
     }
+    
     function updateAnn() {
         const content = document.getElementById('admin-ann-input').value.trim();
         if(!content) return alert("請輸入公告內容");
@@ -570,7 +576,7 @@
     function checkAdmin() { toggleDrawer(false); if(isAdminMode) return showCreate(); const p = prompt("請輸入管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); } }
     function updateUIForAdmin() { document.getElementById('drawer-admin-tools').innerHTML = `<div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 進入管理模式</div><div class="drawer-item" onclick="logout()">🚪 登出管理員</div>`; }
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }
-    function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; switchAdminUI(); }
+    function showCreate() { toggleDrawer(false); document.getElementById('admin-overlay').style.display = 'flex'; switchAdminUI(); }// 打開時先執行一次切換 UI 的邏輯，確保輸入框被畫出來
     function closeOverlay() { document.querySelectorAll('.overlay').forEach(e => e.style.display = 'none'); }
     function openReg(id, title) { document.getElementById('reg-overlay').style.display = 'flex'; document.getElementById('reg-event-id').value = id; document.getElementById('reg-title').innerText = '報名：' + title; }
     function openCancel(eventId) { document.getElementById('cancel-overlay').style.display = 'flex'; document.getElementById('cancel-event-id').value = eventId; }

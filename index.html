@@ -434,12 +434,12 @@
         const id = String(ev.event_id).trim();
         const opts = ev.options ? ev.options.split(',').map(o => o.trim()).filter(o => o !== "") : [];
         const safeVotes = Array.isArray(allVotes) ? allVotes : [];
+        
+        // 1. 先過濾出屬於「這個場次」的所有投票紀錄
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
+        
         const d = new Date(ev.date);
-        
-        // 判斷投票是否過期
         const isPast = d < new Date(); 
-        
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
         const maxVoteInfo = ev.max > 0 ? ` (預計徵求 ${ev.max} 人)` : "";
         
@@ -454,18 +454,20 @@
     
         opts.forEach(opt => {
             const targetOption = String(opt).trim();
-            // 篩選出投給這個選項的人 (假設資料結構 [event_id, name, choice])
-            const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
-            const voteCount = voters.length;
             
-            // 格式化選項時間顯示
+            // 2. 重點修正：從該場次的紀錄中，篩選出選了「目前這個選項」的人名
+            // 假設 v[2] 是選項字串，v[1] 是姓名
+            const voters = evVotes
+                .filter(v => String(v[2]).trim() === targetOption)
+                .map(v => String(v[1]).trim());
+            
+            const voteCount = voters.length;
+            const totalEvVotes = evVotes.length || 1;
+            const barWidth = (voteCount / totalEvVotes) * 100;
+    
             const optD = new Date(opt);
             const displayOpt = isNaN(optD.getTime()) ? opt : 
                 `${(optD.getMonth() + 1).toString().padStart(2, '0')}/${optD.getDate().toString().padStart(2, '0')} ${optD.getHours().toString().padStart(2, '0')}:${optD.getMinutes().toString().padStart(2, '0')}`;
-    
-            // 計算進度條比例（假設以總投票人數為基準，若無人投票則為 0）
-            const totalEvVotes = evVotes.length || 1;
-            const barWidth = (voteCount / totalEvVotes) * 100;
     
             html += `
                 <div class="poll-option" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOption}')">
@@ -476,8 +478,8 @@
                             <span>${voteCount} 票</span>
                         </div>
                     </div>
-                    <div style="font-size:0.75rem; color:var(--gray); margin-top:4px; padding-left:5px;">
-                        ${voters.join(', ') || '暫無人投票'}
+                    <div style="font-size:0.75rem; color:var(--gray); margin-top:4px; padding-left:5px; font-weight:500;">
+                        👥 ${voters.length > 0 ? voters.join(', ') : '暫無人選擇此項'}
                     </div>
                 </div>`;
         });
@@ -487,7 +489,6 @@
                 <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
                     <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
                     ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
-                    ${isAdminMode && !isPast ? `<button class="btn" style="background:#edf2f7; color:var(--primary); border:1.5px solid #cbd5e0; font-size:0.9rem;" onclick="archiveEvent('${id}')">📦 存檔此場次</button>` : ''}
                 </div>
             </div>`;
         return html;

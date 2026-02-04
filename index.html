@@ -227,8 +227,8 @@
     <label class="admin-label">投票截止時間</label>
     <input type="datetime-local" id="admin-deadline">
     
-    <label class="admin-label">正式場次預計人數 (選填)</label>
-    <input type="number" id="admin-vote-max" placeholder="例如：12">
+    <label class="admin-label">場次人數上限 (必填)</label>
+    <input type="number" id="admin-vote-max" placeholder="僅限輸入數字" min="0" max="99">
 
     <label class="admin-label">注意事項 / 預計課表 (切換後會保留)</label>
     <textarea id="admin-vote-desc" rows="3" placeholder="例如：當天會練習攔網，請帶乾淨球鞋..."></textarea>
@@ -572,16 +572,36 @@
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
     
-        let maxVal = parseInt(document.getElementById(mode === 'active' ? 'admin-max' : 'admin-vote-max').value) || 0;
+        // 根據模式選擇對應的人數欄位、時間欄位、描述欄位
+        let maxInput = document.getElementById(mode === 'active' ? 'admin-max' : 'admin-vote-max');
         let dateVal = document.getElementById(mode === 'active' ? 'admin-date' : 'admin-deadline').value;
         let descVal = document.getElementById(mode === 'active' ? 'admin-desc' : 'admin-vote-desc').value;
         
-        // 關鍵修正：投票選項是存在 options 欄位，而不是 desc
+        // 解析人數並進行驗證
+        let maxVal = parseInt(maxInput.value);
+    
+        // 新增：強制驗證邏輯
+        if (mode === 'vote') {
+            if (maxInput.value === "" || isNaN(maxVal)) {
+                return alert("「場次人數上限」為必填項目");
+            }
+            if (maxVal < 0 || maxVal > 99) {
+                return alert("場次人數上限請設定在 0 到 99 之間");
+            }
+        } else {
+            // 一般報名模式的防呆 (可選)
+            if (isNaN(maxVal) || maxVal <= 0) maxVal = 0; 
+        }
+    
         let optionsVal = "";
         if (mode === 'vote') {
             optionsVal = Array.from(document.querySelectorAll('.vote-opt-input'))
                               .map(i => i.value).filter(v => v).join(',');
             if(!optionsVal) return alert("請填寫投票選項");
+            
+            // 檢查選項數量是否符合邏輯 (已在 UI 限制，這層是保險)
+            const optCount = optionsVal.split(',').length;
+            if(optCount < 2) return alert("請至少填寫兩個投票選項");
         }
     
         if(!dateVal) return alert("請填寫日期/截止時間");
@@ -591,9 +611,9 @@
             event_id: 'E' + Date.now(),
             title: title,
             date: dateVal,
-            max: maxVal,
+            max: maxVal, // 這裡會傳送你設定的 0~99 數字
             desc: descVal,     
-            options: optionsVal, // 確保這行有傳送到後端
+            options: optionsVal,
             status: mode
         });
     }

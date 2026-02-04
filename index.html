@@ -427,11 +427,10 @@
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         const d = new Date(ev.date);
         
-        // 新增這行：判斷投票是否過期 (截止時間小於現在時間)
+        // 判斷投票是否過期
         const isPast = d < new Date(); 
         
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    
         const maxVoteInfo = ev.max > 0 ? ` (預計徵求 ${ev.max} 人)` : "";
         
         let html = `
@@ -444,16 +443,37 @@
                 <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
     
         opts.forEach(opt => {
-                const targetOption = String(opt).trim();
-                const voters = evVotes.filter(v => String(v[2]).trim() === targetOption || String(v[2]).trim().includes(targetOption)).map(v => String(v[1]).trim());
-                
-                // --- 格式化選項時間顯示 ---
-                const optD = new Date(opt);
-                // 如果 opt 是合法的 ISO 時間字串，則格式化它；否則顯示原始字串
-                const displayOpt = isNaN(optD.getTime()) ? opt : 
-                    `${(optD.getMonth() + 1).toString().padStart(2, '0')}/${optD.getDate().toString().padStart(2, '0')} ${optD.getHours().toString().padStart(2, '0')}:${optD.getMinutes().toString().padStart(2, '0')}`;
+            const targetOption = String(opt).trim();
+            // 篩選出投給這個選項的人 (假設資料結構 [event_id, name, choice])
+            const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
+            const voteCount = voters.length;
+            
+            // 格式化選項時間顯示
+            const optD = new Date(opt);
+            const displayOpt = isNaN(optD.getTime()) ? opt : 
+                `${(optD.getMonth() + 1).toString().padStart(2, '0')}/${optD.getDate().toString().padStart(2, '0')} ${optD.getHours().toString().padStart(2, '0')}:${optD.getMinutes().toString().padStart(2, '0')}`;
     
-        html += `</div>
+            // 計算進度條比例（假設以總投票人數為基準，若無人投票則為 0）
+            const totalEvVotes = evVotes.length || 1;
+            const barWidth = (voteCount / totalEvVotes) * 100;
+    
+            html += `
+                <div class="poll-option" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOption}')">
+                    <div class="poll-bar-bg">
+                        <div class="poll-bar-fill" style="width: ${barWidth}%"></div>
+                        <div class="poll-text">
+                            <span>${displayOpt}</span>
+                            <span>${voteCount} 票</span>
+                        </div>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--gray); margin-top:4px; padding-left:5px;">
+                        ${voters.join(', ') || '暫無人投票'}
+                    </div>
+                </div>`;
+        });
+    
+        html += `
+                </div>
                 <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
                     <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
                     ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}

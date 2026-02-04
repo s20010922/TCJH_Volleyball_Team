@@ -286,6 +286,15 @@
             area.innerHTML += `<input type="date" class="vote-opt-input">`;
         }
     }
+    function updateAnn() {
+        const content = document.getElementById('admin-ann-input').value.trim();
+        if(!content) return alert("請輸入公告內容");
+        
+        sendData({
+            type: 'updateAnnouncement', // 對應 GAS 的 case 'updateAnnouncement'
+            content: content
+        });
+    }
 
     async function sendData(payload) {
         const loader = document.getElementById('loading-overlay');
@@ -572,11 +581,24 @@
     
     function submitCancel() {
         const name = document.getElementById('cancel-name').value.trim();
+        const eventId = document.getElementById('cancel-event-id').value; // 取得隱藏欄位值
+        
         if(!name) return alert("請輸入報名姓名");
+        
+        // 鎖定按鈕防止重複點擊
+        const btn = document.querySelector('#cancel-overlay .btn');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "處理中...";
+    
         sendData({ 
             type: 'cancelRegistration', 
-            event_id: document.getElementById('cancel-event-id').value, // 改為 event_id
+            event_id: eventId,  // 確保是 event_id
             name: name 
+        }).then(() => {
+            btn.disabled = false;
+            btn.innerText = originalText;
+            document.getElementById('cancel-name').value = ""; // 清空輸入框
         });
     }
     

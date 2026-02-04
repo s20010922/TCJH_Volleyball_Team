@@ -433,62 +433,64 @@
     
     // 2. 修改  函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
-        const id = String(ev.event_id).trim();
-        // 記得補上 options 的解析，否則選項還是不會顯示
-        const opts = ev.options ? ev.options.split(',').map(o => o.trim()).filter(o => o !== "") : [];
-        const safeVotes = Array.isArray(allVotes) ? allVotes : [];
-        const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
-        const d = new Date(ev.date);
-        
-        const isPast = d < new Date(); 
-        const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    
-        // 這裡移除了原本的 maxVoteInfo 變數
-        let html = `
-            <div class="card" style="border: 2px solid var(--accent); position: relative; padding: 22px;">
-                <div class="badge-vote">🗳️ 意願調查中</div>
-                <div class="card-title">${ev.title}</div> <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
-                    ⏱️ 截止時間：${formattedDeadline}
-                </div>
-                <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
-    
-        opts.forEach(opt => {
-            const targetOption = String(opt).trim();
+            const id = String(ev.event_id).trim();
+            const opts = ev.options ? ev.options.split(',').map(o => o.trim()).filter(o => o !== "") : [];
+            const safeVotes = Array.isArray(allVotes) ? allVotes : [];
+            const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
+            const d = new Date(ev.date);
             
-            let displayOpt = targetOption;
-            const dObj = new Date(targetOption);
-            if(!isNaN(dObj)) {
-                const m = (dObj.getMonth() + 1).toString().padStart(2, '0');
-                const d = dObj.getDate().toString().padStart(2, '0');
-                const h = dObj.getHours().toString().padStart(2, '0');
-                const min = dObj.getMinutes().toString().padStart(2, '0');
-                
-                // 如果分鐘是 00，就顯示整點，否則顯示時分
-                displayOpt = `${m}/${d} ${h}:${min}`;
-            }
+            const isPast = d < new Date(); 
+            const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
         
-            const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
-            
-            html += `
-                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOption}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
-                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
-                        <span>📅 ${displayOpt}</span>
-                        <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
+            let html = `
+                <div class="card" style="border: 2px solid var(--accent); position: relative; padding: 22px;">
+                    <div class="badge-vote">🗳️ 意願調查中</div>
+                    <div class="card-title">${ev.title}</div> 
+                    <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
+                        ⏱️ 截止時間：${formattedDeadline}
                     </div>
-                    ...
+                    <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
+        
+            opts.forEach(opt => {
+                const targetOption = String(opt).trim();
+                
+                // 格式化選項顯示時間
+                let displayOpt = targetOption;
+                const dObj = new Date(targetOption);
+                if(!isNaN(dObj)) {
+                    const m = (dObj.getMonth() + 1).toString().padStart(2, '0');
+                    const d = dObj.getDate().toString().padStart(2, '0');
+                    const h = dObj.getHours().toString().padStart(2, '0');
+                    const min = dObj.getMinutes().toString().padStart(2, '0');
+                    displayOpt = `${m}/${d} ${h}:${min}`;
+                }
+            
+                // 過濾出投給這個選項的人
+                const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
+                
+                html += `
+                    <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOption}')" 
+                         style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer; transition: 0.2s;">
+                        <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
+                            <span>📅 ${displayOpt}</span>
+                            <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${voters.length > 0 
+                                ? voters.map(name => `<span style="background:#ebf8ff; color:var(--secondary); padding:2px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border: 1px solid #bee3f8;">${name}</span>`).join('') 
+                                : '<span style="color:#cbd5e0; font-size:0.75rem;">尚未有人投票</span>'}
+                        </div>
+                    </div>`;
+            });
+        
+            html += `</div>
+                    <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
+                        <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
+                        ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
+                    </div>
                 </div>`;
-        });
-    
-        html += `</div>
-                <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
-                    <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
-                    ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
-                    ${isAdminMode && !isPast ? `<button class="btn" style="background:#edf2f7; color:var(--primary); border:1.5px solid #cbd5e0; font-size:0.9rem;" onclick="archiveEvent('${id}')">📦 存檔此場次</button>` : ''}
-                </div>
-            </div>`;
-        return html;
-    }
+            return html;
+        }
     
     // 投票點擊觸發
     function handleVoteClick(id, title, choice) {

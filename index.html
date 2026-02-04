@@ -299,11 +299,8 @@
     function renderVoteInputs() {
         const count = document.getElementById('admin-vote-count').value;
         const area = document.getElementById('admin-vote-options-area');
-        // 先清空並加上標題
-        area.innerHTML += `<input type="datetime-local" class="vote-opt-input" style="margin-bottom: 8px;">`;
-        
+        area.innerHTML = ""; // 先清空
         for(let i = 0; i < count; i++) {
-            // 這裡建議加上 type="date" 或 type="text"，確保樣式一致
             area.innerHTML += `<input type="datetime-local" class="vote-opt-input" style="margin-bottom: 8px;">`;
         }
     }

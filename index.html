@@ -452,21 +452,19 @@
                 </div>
                 <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
     
-        opts.forEach(opt => {
-            const targetOption = String(opt).trim();
-            
-            // 2. 重點修正：從該場次的紀錄中，篩選出選了「目前這個選項」的人名
-            // 假設 v[2] 是選項字串，v[1] 是姓名
-            const voters = evVotes
-                    .filter(v => String(v[2]).trim() === targetOption) 
-                    .map(v => String(v[1]).trim());            
-            const voteCount = voters.length;
-            const totalEvVotes = evVotes.length || 1;
-            const barWidth = (voteCount / totalEvVotes) * 100;
-    
-            const optD = new Date(opt);
-            const displayOpt = isNaN(optD.getTime()) ? opt : 
-                `${(optD.getMonth() + 1).toString().padStart(2, '0')}/${optD.getDate().toString().padStart(2, '0')} ${optD.getHours().toString().padStart(2, '0')}:${optD.getMinutes().toString().padStart(2, '0')}`;
+            opts.forEach(opt => {
+                const targetOption = String(opt).trim();
+                
+                // 關鍵修正：將投票紀錄與選項都轉成 Date 物件再比對字串，避免格式不一
+                const voters = evVotes
+                    .filter(v => {
+                        const voteChoice = String(v[2]).trim();
+                        // 嘗試將兩者都轉為 Date 的時間數值來比對，若不是日期則比對原字串
+                        const d1 = new Date(voteChoice).getTime();
+                        const d2 = new Date(targetOption).getTime();
+                        return (!isNaN(d1) && !isNaN(d2)) ? d1 === d2 : voteChoice === targetOption;
+                    })
+                    .map(v => String(v[1]).trim());
     
             html += `
                 <div class="poll-option" onclick="handleVoteClick('${id}', '${ev.title}', '${targetOption}')">

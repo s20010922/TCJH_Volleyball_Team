@@ -264,6 +264,16 @@
     <input type="text" id="cancel-name" placeholder="請輸入姓名">
     <button class="btn" style="background:var(--danger); color:white;" onclick="submitCancel()">確認取消</button>
 </div>
+    
+<div id="cancel-vote-overlay" class="overlay">
+    <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
+    <h2 style="font-weight:900;">撤回投票意願</h2>
+    <p style="font-size:0.95rem; color:var(--danger); font-weight: 500;">* 請輸入您當時投票使用的姓名</p>
+    <input type="hidden" id="cancel-vote-event-id">
+    <input type="hidden" id="cancel-vote-choice">
+    <input type="text" id="cancel-vote-name" placeholder="請輸入姓名">
+    <button class="btn" style="background:var(--danger); color:white;" onclick="submitCancelVote()">確認撤回</button>
+</div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyp9nVm07TwfFTA5OQGOD34Ewh9SDQETXs-D1gbESPi2veqCsJ-TDAJaAB0jVpfjGjewA/exec"; 
@@ -443,6 +453,11 @@
         html += `</div>
                 ${isAdminMode ? `<button style="color:var(--danger); background:none; border:2px solid #fed7d7; border-radius:12px; padding:8px; width:100%; margin-top:15px; cursor:pointer; font-weight:700;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
             </div>`;
+        html += `
+            <p onclick="openCancelVote('${id}')" style="text-align:center; font-size:0.8rem; cursor:pointer; color:var(--gray); margin-top:15px; text-decoration:underline;">
+                投錯日期了？點此撤回投票
+            </p>
+        `;
         return html;
     }
     
@@ -618,6 +633,32 @@
         }
         fetchData();
     })();
+    
+    function openCancelVote(eventId) {
+        document.getElementById('cancel-vote-overlay').style.display = 'flex';
+        document.getElementById('cancel-vote-event-id').value = eventId;
+    }
+    
+    function submitCancelVote() {
+        const name = document.getElementById('cancel-vote-name').value.trim();
+        const eventId = document.getElementById('cancel-vote-event-id').value;
+        
+        if(!name) return alert("請輸入姓名");
+        
+        const btn = document.querySelector('#cancel-vote-overlay .btn');
+        btn.disabled = true;
+        btn.innerText = "撤回中...";
+    
+        sendData({ 
+            type: 'cancelVote', // 對應 GAS 後端的動作
+            event_id: eventId,
+            name: name 
+        }).then(() => {
+            btn.disabled = false;
+            btn.innerText = "確認撤回";
+            document.getElementById('cancel-vote-name').value = "";
+        });
+    }   
 </script>
 </body>
 </html>

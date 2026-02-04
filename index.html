@@ -537,35 +537,30 @@
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
     
-        let maxVal = 0;
-        let dateVal = "";
-        let descVal = "";
+        let maxVal = parseInt(document.getElementById(mode === 'active' ? 'admin-max' : 'admin-vote-max').value) || 0;
+        let dateVal = document.getElementById(mode === 'active' ? 'admin-date' : 'admin-deadline').value;
+        let descVal = document.getElementById(mode === 'active' ? 'admin-desc' : 'admin-vote-desc').value;
+        
+        // 關鍵修正：投票選項是存在 options 欄位，而不是 desc
         let optionsVal = "";
-    
-        if (mode === 'active') {
-            maxVal = parseInt(document.getElementById('admin-max').value) || 0;
-            dateVal = document.getElementById('admin-date').value;
-            descVal = document.getElementById('admin-desc').value;
-            if(!dateVal) return alert("請選擇日期");
-        } else {
-            maxVal = parseInt(document.getElementById('admin-vote-max').value) || 0;
-            dateVal = document.getElementById('admin-deadline').value; // 投票截止時間
-            // 抓取所有投票選項
-            descVal = Array.from(document.querySelectorAll('.vote-opt-input'))
-                           .map(i => i.value).filter(v => v).join(',');
-            if(!dateVal || !descVal) return alert("請填寫截止時間與投票選項");
+        if (mode === 'vote') {
+            optionsVal = Array.from(document.querySelectorAll('.vote-opt-input'))
+                              .map(i => i.value).filter(v => v).join(',');
+            if(!optionsVal) return alert("請填寫投票選項");
         }
     
+        if(!dateVal) return alert("請填寫日期/截止時間");
+    
         sendData({
-                type: 'createEvent',
-                event_id: 'E' + Date.now(),
-                title: title,
-                date: dateVal,
-                max: maxVal,
-                desc: descVal,      // 存入試算表 Desc 欄位
-                options: optionsVal, // 存入試算表 Options 欄位
-                status: mode
-            });
+            type: 'createEvent',
+            event_id: 'E' + Date.now(),
+            title: title,
+            date: dateVal,
+            max: maxVal,
+            desc: descVal,     
+            options: optionsVal, // 確保這行有傳送到後端
+            status: mode
+        });
     }
 
     // --- 以下為原本功能邏輯 (保持不動) ---

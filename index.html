@@ -215,8 +215,8 @@
     <input type="text" id="admin-title" placeholder="例如：週日練習 / 寒訓日期調查">
 
     <div id="admin-ui-active">
-        <label class="admin-label">練球日期</label>
-        <input type="date" id="admin-date">
+        <label class="admin-label">練球日期與時間</label>
+        <input type="datetime-local" id="admin-date">
         <label class="admin-label">人數限制</label>
         <input type="number" id="admin-max" placeholder="人數上限">
         <label class="admin-label">備註 (填寫菜單)</label>
@@ -300,11 +300,11 @@
         const count = document.getElementById('admin-vote-count').value;
         const area = document.getElementById('admin-vote-options-area');
         // 先清空並加上標題
-        area.innerHTML = '<label class="admin-label">選項日期 (請填寫或選擇日期)</label>';
+        area.innerHTML += `<input type="datetime-local" class="vote-opt-input" style="margin-bottom: 8px;">`;
         
         for(let i = 0; i < count; i++) {
             // 這裡建議加上 type="date" 或 type="text"，確保樣式一致
-            area.innerHTML += `<input type="date" class="vote-opt-input" style="margin-bottom: 8px;">`;
+            area.innerHTML += `<input type="datetime-local" class="vote-opt-input" style="margin-bottom: 8px;">`;
         }
     }
     
@@ -444,20 +444,14 @@
                 <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;
     
         opts.forEach(opt => {
-            const targetOption = String(opt).trim();
-            const voters = evVotes.filter(v => String(v[2]).trim() === targetOption || String(v[2]).trim().includes(targetOption)).map(v => String(v[1]).trim());
-            html += `
-                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title}', '${opt}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer;">
-                    <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
-                        <span>📅 ${opt}</span>
-                        <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
-                    </div>
-                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        ${voters.length > 0 ? voters.map(name => `<span style="background:#ebf8ff; color:var(--secondary); padding:2px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border: 1px solid #bee3f8;">${name}</span>`).join('') : '<span style="color:#cbd5e0; font-size:0.75rem;">點擊參與投票</span>'}
-                    </div>
-                </div>`;
-        });
+                const targetOption = String(opt).trim();
+                const voters = evVotes.filter(v => String(v[2]).trim() === targetOption || String(v[2]).trim().includes(targetOption)).map(v => String(v[1]).trim());
+                
+                // --- 格式化選項時間顯示 ---
+                const optD = new Date(opt);
+                // 如果 opt 是合法的 ISO 時間字串，則格式化它；否則顯示原始字串
+                const displayOpt = isNaN(optD.getTime()) ? opt : 
+                    `${(optD.getMonth() + 1).toString().padStart(2, '0')}/${optD.getDate().toString().padStart(2, '0')} ${optD.getHours().toString().padStart(2, '0')}:${optD.getMinutes().toString().padStart(2, '0')}`;
     
         html += `</div>
                 <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
@@ -480,10 +474,16 @@
         const id = ev.event_id;
         const eventRegs = allRegs ? allRegs.filter(r => String(r[0]) === String(id)) : [];
         const count = eventRegs.length;
+        
+        // --- 修改時間格式化邏輯 ---
+        const d = new Date(ev.date);
+        const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+        const formattedDate = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} (${dayNames[d.getDay()]}) ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        // ------------------------
+    
         const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
         const progress = Math.min((count / ev.max) * 100, 100);
-        const formattedDate = new Date(ev.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit', weekday: 'short' });
-                    
+        
         return `
             <div class="card ${isPast ? 'card-past' : ''}">
                 <div class="card-title">${ev.title}</div>

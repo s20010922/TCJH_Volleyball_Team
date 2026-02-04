@@ -394,7 +394,7 @@
         // 分流處理
         data.events.forEach(ev => {
             if (ev.status === 'vote') {
-                voteList.innerHTML += createVoteCard(ev, data.votes); 
+                voteList.innerHTML += (ev, data.votes); 
             } else if (ev.status === 'active') {
                 activeList.innerHTML += createCard(ev, data.regs, false);
             } else if (ev.status === 'archive' || ev.status === 'past') {
@@ -417,9 +417,12 @@
         const safeVotes = Array.isArray(allVotes) ? allVotes : [];
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         const d = new Date(ev.date);
+        
+        // 判斷是否過期 (截止時間小於現在)
+        const isPast = d < new Date(); 
+        
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     
-        // 這裡修正：將邏輯判斷包在 ${} 裡面，或者先定義好變數
         const maxVoteInfo = ev.max > 0 ? ` (預計徵求 ${ev.max} 人)` : "";
         
         let html = `

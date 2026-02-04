@@ -224,8 +224,8 @@
     </div>
 
 <div id="admin-ui-vote" style="display:none;">
-    <label class="admin-label">投票截止時間 (年月日時)</label>
-    <input type="datetime-local" id="admin-deadline" onchange="forceHourly(this)" required>
+    <label class="admin-label">投票截止時間 (僅限整點)</label>
+    <input type="datetime-local" id="admin-deadline" step="3600" onchange="forceHourly(this)" required>
     
     <label class="admin-label">正式場次人數上限</label>
     <input type="number" id="admin-vote-max" placeholder="例如：12" required>
@@ -301,15 +301,13 @@
     function renderVoteInputs() {
         const count = document.getElementById('admin-vote-count').value;
         const area = document.getElementById('admin-vote-options-area');
-        // 修改標題並提醒整點限制
-        area.innerHTML = '<label class="admin-label">選項日期 (僅限整點，非整點將自動修正)</label>';
+        area.innerHTML = '<label class="admin-label">選項日期 (年月日時分)</label>';
         
         for(let i = 0; i < count; i++) {
-            // 使用 datetime-local，並加入 onchange 事件來強制修正整點
+            // 這裡不加 step="3600" 和 onchange，讓管理員可以選分鐘
             area.innerHTML += `
                 <input type="datetime-local" 
                        class="vote-opt-input" 
-                       onchange="forceHourly(this)"
                        style="margin-bottom: 8px;" 
                        required>`;
         }
@@ -317,17 +315,16 @@
     
     // 新增：強制整點的輔助函數
     function forceHourly(input) {
-        if(!input.value) return;
+        if (!input.value) return;
         
-        // 將值轉為日期物件
         let d = new Date(input.value);
-        // 將分鐘與秒數歸零
+        // 歸零分鐘與秒數
         d.setMinutes(0);
         d.setSeconds(0);
         d.setMilliseconds(0);
         
-        // 重新格式化回 datetime-local 所需的 YYYY-MM-DDTHH:mm 格式
-        const tzoffset = d.getTimezoneOffset() * 60000; // 補償時區偏移
+        // 格式化回 datetime-local 要求的格式 (YYYY-MM-DDTHH:mm)
+        const tzoffset = d.getTimezoneOffset() * 60000; 
         const localISOTime = (new Date(d - tzoffset)).toISOString().slice(0, 16);
         
         input.value = localISOTime;
@@ -458,17 +455,17 @@
         opts.forEach(opt => {
             const targetOption = String(opt).trim();
             
-            // 格式化顯示時間，把 2026-02-10T19:00 變成 02/10 19:00
             let displayOpt = targetOption;
-            try {
-                const dateObj = new Date(targetOption);
-                if(!isNaN(dateObj)) {
-                    const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-                    const d = dateObj.getDate().toString().padStart(2, '0');
-                    const h = dateObj.getHours().toString().padStart(2, '0');
-                    displayOpt = `${m}/${d} ${h}:00`;
-                }
-            } catch(e) { /* 若非日期格式則維持原樣 */ }
+            const dObj = new Date(targetOption);
+            if(!isNaN(dObj)) {
+                const m = (dObj.getMonth() + 1).toString().padStart(2, '0');
+                const d = dObj.getDate().toString().padStart(2, '0');
+                const h = dObj.getHours().toString().padStart(2, '0');
+                const min = dObj.getMinutes().toString().padStart(2, '0');
+                
+                // 如果分鐘是 00，就顯示整點，否則顯示時分
+                displayOpt = `${m}/${d} ${h}:${min}`;
+            }
         
             const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
             

@@ -410,7 +410,7 @@
         if (pastList.innerHTML === "") pastList.innerHTML = emptyMsg("📅 目前沒有歷史場次紀錄");
     }
     
-    // 2. 修改 createVoteCard 函數：修正過濾邏輯
+    // 2. 修改  函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
         const id = String(ev.event_id).trim();
         const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()).filter(o => o !== "") : [];
@@ -418,7 +418,7 @@
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         const d = new Date(ev.date);
         
-        // 判斷是否過期 (截止時間小於現在)
+        // 新增這行：判斷投票是否過期 (截止時間小於現在時間)
         const isPast = d < new Date(); 
         
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;

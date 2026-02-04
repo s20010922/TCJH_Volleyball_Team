@@ -185,6 +185,9 @@
         <div id="announcement-text" style="font-size:1rem; line-height: 1.6; font-weight: 400;">...</div>
     </div>
 
+    <div class="section-title" style="border-color: var(--accent);">📊 意願調查中</div>
+    <div id="vote-list" class="event-grid"></div>
+
     <div class="section-title">🔥 即將進行的練習</div>
     <div id="event-list" class="event-grid"></div>
 
@@ -370,30 +373,41 @@
         }
     }
 
-    // 1. 修改 renderAll 函數，確保傳入正確的 data 結構
     function renderAll(data) {
+        const voteList = document.getElementById('vote-list');
         const activeList = document.getElementById('event-list');
         const pastList = document.getElementById('past-list');
         
+        // 初始化清空
+        voteList.innerHTML = "";
         activeList.innerHTML = "";
         pastList.innerHTML = "";
     
         if (!data.events || data.events.length === 0) {
-            activeList.innerHTML = "<p style='padding:20px; color:var(--gray);'>目前暫無新場次</p>";
-        } else {
-            data.events.forEach(ev => {
-                const eid = String(ev.event_id).trim();
-                
-                if (ev.status === 'vote') {
-                    // 這裡必須明確呼叫 createVoteCard 函數
-                    activeList.innerHTML += createVoteCard(ev, data.votes); 
-                } else if (ev.status === 'active') {
-                    activeList.innerHTML += createCard(ev, data.regs, false);
-                } else {
-                    pastList.innerHTML += createCard(ev, data.regs, true);
-                }
-            });
+            const noDataHtml = "<p style='padding:15px; color:var(--gray); font-weight:500;'>目前暫無場次資料</p>";
+            voteList.innerHTML = noDataHtml;
+            activeList.innerHTML = noDataHtml;
+            pastList.innerHTML = noDataHtml;
+            return;
         }
+    
+        // 分流處理
+        data.events.forEach(ev => {
+            if (ev.status === 'vote') {
+                voteList.innerHTML += createVoteCard(ev, data.votes); 
+            } else if (ev.status === 'active') {
+                activeList.innerHTML += createCard(ev, data.regs, false);
+            } else if (ev.status === 'archive' || ev.status === 'past') {
+                pastList.innerHTML += createCard(ev, data.regs, true);
+            }
+        });
+    
+        // 檢查各區塊是否為空，若為空則顯示提示字眼
+        const emptyMsg = (text) => `<p style='padding:15px; color:var(--gray); font-weight:500;'>${text}</p>`;
+    
+        if (voteList.innerHTML === "") voteList.innerHTML = emptyMsg("✨ 目前沒有正在進行的調查");
+        if (activeList.innerHTML === "") activeList.innerHTML = emptyMsg("🏐 目前沒有即將進行的練習");
+        if (pastList.innerHTML === "") pastList.innerHTML = emptyMsg("📅 目前沒有歷史場次紀錄");
     }
     
     // 2. 修改 createVoteCard 函數：修正過濾邏輯

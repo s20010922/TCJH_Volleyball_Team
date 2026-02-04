@@ -233,10 +233,11 @@
     <label class="admin-label">注意事項 / 預計課表 (切換後會保留)</label>
     <textarea id="admin-vote-desc" rows="3" placeholder="例如：當天會練習攔網，請帶乾淨球鞋..."></textarea>
 
-    <label class="admin-label">選項數量 (最多10個)</label>
+    <label class="admin-label">選項數量 (2~4個)</label>
     <select id="admin-vote-count" onchange="renderVoteInputs()">
-        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-        <option value="4" selected>4</option><option value="5">5</option><option value="10">10</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
     </select>
     <div id="admin-vote-options-area"></div>
     </div> <button class="btn btn-accent" style="margin-top:20px; margin-bottom:40px;" onclick="addNewEvent()">發布項目</button>
@@ -297,22 +298,32 @@
     }
 
     function renderVoteInputs() {
-        const count = document.getElementById('admin-vote-count').value;
+        const countSelect = document.getElementById('admin-vote-count');
         const area = document.getElementById('admin-vote-options-area');
-        area.innerHTML = ""; // 先清空
-        for(let i = 0; i < count; i++) {
-            area.innerHTML += `<input type="datetime-local" class="vote-opt-input" style="margin-bottom: 8px;">`;
-        }
-    }
-    
-    function updateAnn() {
-        const content = document.getElementById('admin-ann-input').value.trim();
-        if(!content) return alert("請輸入公告內容");
         
-        sendData({
-            type: 'updateAnnouncement', // 對應 GAS 的 case 'updateAnnouncement'
-            content: content
-        });
+        // 取得目前選擇的數量，並強制限制在 2~4
+        let count = parseInt(countSelect.value);
+        if (count < 2) count = 2;
+        if (count > 4) count = 4;
+    
+        // 先清空區域，避免舊欄位堆疊
+        area.innerHTML = ""; 
+    
+        // 根據數量產生對應的輸入框
+        for(let i = 1; i <= count; i++) {
+            const label = document.createElement('label');
+            label.className = 'admin-label';
+            label.style.fontSize = '0.75rem';
+            label.innerText = `選項 ${i}`;
+            
+            const input = document.createElement('input');
+            input.type = 'datetime-local';
+            input.className = 'vote-opt-input';
+            input.style.marginBottom = '8px';
+            
+            area.appendChild(label);
+            area.appendChild(input);
+        }
     }
 
     async function sendData(payload) {

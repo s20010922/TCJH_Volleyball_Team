@@ -422,23 +422,20 @@
     // 2. 修改  函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
         const id = String(ev.event_id).trim();
+        // 記得補上 options 的解析，否則選項還是不會顯示
         const opts = ev.options ? ev.options.split(',').map(o => o.trim()).filter(o => o !== "") : [];
         const safeVotes = Array.isArray(allVotes) ? allVotes : [];
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         const d = new Date(ev.date);
         
-        // 新增這行：判斷投票是否過期 (截止時間小於現在時間)
         const isPast = d < new Date(); 
-        
         const formattedDeadline = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
     
-        const maxVoteInfo = ev.max > 0 ? ` (預計徵求 ${ev.max} 人)` : "";
-        
+        // 這裡移除了原本的 maxVoteInfo 變數
         let html = `
             <div class="card" style="border: 2px solid var(--accent); position: relative; padding: 22px;">
                 <div class="badge-vote">🗳️ 意願調查中</div>
-                <div class="card-title">${ev.title}${maxVoteInfo}</div> 
-                <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
+                <div class="card-title">${ev.title}</div> <div style="color: var(--danger); font-size: 0.85rem; font-weight: 700; margin-bottom: 15px;">
                     ⏱️ 截止時間：${formattedDeadline}
                 </div>
                 <div style="display: grid; gap: 10px; margin-bottom: 20px;">`;

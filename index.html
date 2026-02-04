@@ -458,9 +458,8 @@
             // 2. 重點修正：從該場次的紀錄中，篩選出選了「目前這個選項」的人名
             // 假設 v[2] 是選項字串，v[1] 是姓名
             const voters = evVotes
-                .filter(v => String(v[2]).trim() === targetOption)
-                .map(v => String(v[1]).trim());
-            
+                    .filter(v => String(v[2]).trim() === targetOption) 
+                    .map(v => String(v[1]).trim());            
             const voteCount = voters.length;
             const totalEvVotes = evVotes.length || 1;
             const barWidth = (voteCount / totalEvVotes) * 100;

@@ -452,24 +452,21 @@
     
         opts.forEach(opt => {
             const targetOption = String(opt).trim();
-            
-            // 格式化顯示時間
             let displayOpt = targetOption;
             const dObj = new Date(targetOption);
             if(!isNaN(dObj)) {
-                const m = (dObj.getMonth() + 1).toString().padStart(2, '0');
-                const d = dObj.getDate().toString().padStart(2, '0');
-                const h = dObj.getHours().toString().padStart(2, '0');
-                const min = dObj.getMinutes().toString().padStart(2, '0');
-                displayOpt = `${m}/${d} ${h}:${min}`;
+                displayOpt = `${(dObj.getMonth()+1).toString().padStart(2,'0')}/${dObj.getDate().toString().padStart(2,'0')} ${dObj.getHours().toString().padStart(2,'0')}:${dObj.getMinutes().toString().padStart(2,'0')}`;
             }
         
             const voters = evVotes.filter(v => String(v[2]).trim() === targetOption).map(v => String(v[1]).trim());
             
-            // 核心修正：確保 onclick 屬性完整閉合
+            // 這裡是最重要的修正：處理單引號並確保 onclick 格式正確
+            const safeTitle = ev.title.replace(/'/g, "\\'");
+            const safeOpt = targetOption.replace(/'/g, "\\'");
+        
             html += `
-                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${ev.title.replace(/'/g, "\\'")}', '${targetOption}')" 
-                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer; transition: 0.2s;">
+                <div class="poll-option-item" onclick="handleVoteClick('${id}', '${safeTitle}', '${safeOpt}')" 
+                     style="background:#fff; border: 1.5px solid #e2e8f0; border-radius:12px; padding:12px; cursor:pointer; transition: 0.2s; margin-bottom:8px;">
                     <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:8px; display:flex; justify-content:space-between;">
                         <span>📅 ${displayOpt}</span>
                         <span style="color:var(--secondary); font-size:0.8rem;">${voters.length} 人</span>
@@ -493,8 +490,12 @@
     
     // 投票點擊觸發
     function handleVoteClick(id, title, choice) {
-        // 呼叫原本就有的開窗函數
-        openVote(id, title, choice);
+        // 確保這些 ID 跟你 HTML 裡的 vote-overlay 內部元素一致
+        document.getElementById('vote-event-id').value = id;
+        document.getElementById('vote-choice-val').value = choice;
+        document.getElementById('vote-popup-title').innerText = "投票意願調查";
+        document.getElementById('vote-popup-choice').innerText = `【${title}】\n您的選擇：${choice}`;
+        document.getElementById('vote-overlay').style.display = 'flex';
     }
     
     // 3. 修改報名卡片函數 (對應物件格式)

@@ -448,6 +448,7 @@
                 <div class="card-actions" style="display:flex; flex-direction:column; gap:8px;">
                     <button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancelVote('${id}')">撤回我的投票</button>
                     ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此投票</button>` : ''}
+                    ${isAdminMode && !isPast ? `<button class="btn" style="background:#edf2f7; color:var(--primary); border:1.5px solid #cbd5e0; font-size:0.9rem;" onclick="archiveEvent('${id}')">📦 存檔此場次</button>` : ''}
                 </div>
             </div>`;
         return html;
@@ -653,7 +654,16 @@
             btn.innerText = "確認撤回";
             document.getElementById('cancel-vote-name').value = "";
         });
-    }   
+    }
+    
+    function archiveEvent(id) {
+        if(confirm("確定要將此場次存入歷史紀錄嗎？存檔後將無法再報名。")) {
+            sendData({
+                type: 'archiveEvent',
+                event_id: id
+            });
+        }
+    }
 </script>
 </body>
 </html>

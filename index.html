@@ -394,7 +394,7 @@
         // 分流處理
         data.events.forEach(ev => {
             if (ev.status === 'vote') {
-                voteList.innerHTML += (ev, data.votes); 
+                voteList.innerHTML += createVoteCard(ev, data.votes); 
             } else if (ev.status === 'active') {
                 activeList.innerHTML += createCard(ev, data.regs, false);
             } else if (ev.status === 'archive' || ev.status === 'past') {
@@ -535,42 +535,33 @@
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
     
-        // 關鍵修正：根據模式選擇正確的人數輸入框
         let maxVal = 0;
+        let dateVal = "";
+        let descVal = "";
+    
         if (mode === 'active') {
             maxVal = parseInt(document.getElementById('admin-max').value) || 0;
+            dateVal = document.getElementById('admin-date').value;
+            descVal = document.getElementById('admin-desc').value;
+            if(!dateVal) return alert("請選擇日期");
         } else {
-            // 投票模式下，讀取「正式場次預計人數」這個欄位
             maxVal = parseInt(document.getElementById('admin-vote-max').value) || 0;
+            dateVal = document.getElementById('admin-deadline').value; // 投票截止時間
+            // 抓取所有投票選項
+            descVal = Array.from(document.querySelectorAll('.vote-opt-input'))
+                           .map(i => i.value).filter(v => v).join(',');
+            if(!dateVal || !descVal) return alert("請填寫截止時間與投票選項");
         }
     
-        const commonData = {
+        sendData({
+            type: 'createEvent',
             event_id: 'E' + Date.now(),
             title: title,
-            status: mode,
-            max: maxVal // 確保這裡抓到的是正確的數字
-        };
-    
-        if(mode === 'active') {
-            const date = document.getElementById('admin-date').value;
-            if(!date) return alert("請填寫日期");
-            sendData({ 
-                ...commonData, 
-                type: 'createEvent', 
-                date: date, 
-                desc: document.getElementById('admin-desc').value 
-            });
-        } else {
-            const deadline = document.getElementById('admin-deadline').value;
-            const opts = Array.from(document.querySelectorAll('.vote-opt-input')).map(i => i.value).filter(v => v).join(',');
-            if(!deadline || !opts) return alert("請填寫截止時間與至少一個日期選項");
-            sendData({ 
-                ...commonData, 
-                type: 'createEvent', 
-                date: deadline, 
-                desc: opts 
-            });
-        }
+            date: dateVal,
+            max: maxVal,
+            desc: descVal,
+            status: mode
+        });
     }
 
     // --- 以下為原本功能邏輯 (保持不動) ---

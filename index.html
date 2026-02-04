@@ -224,23 +224,25 @@
     </div>
 
 <div id="admin-ui-vote" style="display:none;">
-    <label class="admin-label">投票截止時間</label>
-    <input type="datetime-local" id="admin-deadline">
+    <label class="admin-label">投票截止時間 (年月日時)</label>
+    <input type="datetime-local" id="admin-deadline" required>
     
-    <label class="admin-label">正式場次預計人數 (選填)</label>
-    <input type="number" id="admin-vote-max" placeholder="例如：12">
+    <label class="admin-label">正式場次人數上限</label>
+    <input type="number" id="admin-vote-max" placeholder="例如：12" required>
 
-    <label class="admin-label">注意事項 / 預計課表 (切換後會保留)</label>
-    <textarea id="admin-vote-desc" rows="3" placeholder="例如：當天會練習攔網，請帶乾淨球鞋..."></textarea>
+    <label class="admin-label">注意事項 / 預計課表</label>
+    <textarea id="admin-vote-desc" rows="3" placeholder="例如：當天會練習攔網..."></textarea>
 
-    <label class="admin-label">選項數量 (最多10個)</label>
+    <label class="admin-label">提供日期選項數量</label>
     <select id="admin-vote-count" onchange="renderVoteInputs()">
-        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-        <option value="4" selected>4</option><option value="5">5</option><option value="10">10</option>
+        <option value="2" selected>2 個選項</option>
+        <option value="3">3 個選項</option>
+        <option value="4">4 個選項</option>
+        <option value="5">5 個選項</option>
     </select>
     <div id="admin-vote-options-area"></div>
-    </div> <button class="btn btn-accent" style="margin-top:20px; margin-bottom:40px;" onclick="addNewEvent()">發布項目</button>
 </div>
+    <button class="btn btn-accent" style="margin-top:20px; margin-bottom:40px;" onclick="addNewEvent()">發布項目</button>
 
 <div id="reg-overlay" class="overlay">
     <button class="btn-sm" style="color:var(--primary); width:80px; margin-bottom:20px; border-color: var(--primary); background: #eee;" onclick="closeOverlay()">← 返回</button>
@@ -304,7 +306,7 @@
         
         for(let i = 0; i < count; i++) {
             // 這裡建議加上 type="date" 或 type="text"，確保樣式一致
-            area.innerHTML += `<input type="date" class="vote-opt-input" style="margin-bottom: 8px;">`;
+            area.innerHTML += `<input type="text" class="vote-opt-input" placeholder="選項 ${i}" style="margin-bottom: 8px;" required>`;
         }
     }
     
@@ -541,16 +543,25 @@
         const title = document.getElementById('admin-title').value.trim();
         if(!title) return alert("請輸入標題");
     
-        let maxVal = parseInt(document.getElementById(mode === 'active' ? 'admin-max' : 'admin-vote-max').value) || 0;
+        // 取得人數上限，若為空則提示
+        const maxField = document.getElementById(mode === 'active' ? 'admin-max' : 'admin-vote-max');
+        if(!maxField.value) return alert("請填寫人數上限");
+        let maxVal = parseInt(maxField.value);
+    
         let dateVal = document.getElementById(mode === 'active' ? 'admin-date' : 'admin-deadline').value;
         let descVal = document.getElementById(mode === 'active' ? 'admin-desc' : 'admin-vote-desc').value;
         
-        // 關鍵修正：投票選項是存在 options 欄位，而不是 desc
         let optionsVal = "";
         if (mode === 'vote') {
             optionsVal = Array.from(document.querySelectorAll('.vote-opt-input'))
-                              .map(i => i.value).filter(v => v).join(',');
-            if(!optionsVal) return alert("請填寫投票選項");
+                              .map(i => i.value.trim())
+                              .filter(v => v)
+                              .join(',');
+            
+            // 檢查選項數量是否符合設定
+            const expectedCount = parseInt(document.getElementById('admin-vote-count').value);
+            const actualCount = optionsVal.split(',').filter(s => s !== "").length;
+            if(actualCount < expectedCount) return alert(`請完整填寫 ${expectedCount} 個投票選項`);
         }
     
         if(!dateVal) return alert("請填寫日期/截止時間");
@@ -562,7 +573,7 @@
             date: dateVal,
             max: maxVal,
             desc: descVal,     
-            options: optionsVal, // 確保這行有傳送到後端
+            options: optionsVal,
             status: mode
         });
     }
@@ -664,6 +675,14 @@
             });
         }
     }
+    
+document.addEventListener('DOMContentLoaded', () => {
+    // 預設畫出 2 個選項輸入框
+    if(document.getElementById('admin-vote-count')) {
+        renderVoteInputs();
+    }
+});
+    
 </script>
 </body>
 </html>

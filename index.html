@@ -223,20 +223,22 @@
         <textarea id="admin-desc" rows="3"></textarea>
     </div>
 
-    <div id="admin-ui-vote" style="display:none;">
-<label class="admin-label">投票截止時間</label>
-        <input type="datetime-local" id="admin-deadline">
-        <label class="admin-label">正式場次預計人數 (選填)</label>
-        <input type="number" id="admin-vote-max" placeholder="例如：12">
-        <label class="admin-label">選項數量 (最多10個)</label>
-        <select id="admin-vote-count" onchange="renderVoteInputs()">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4" selected>4</option><option value="5">5</option><option value="10">10</option>
-        </select>
-        <div id="admin-vote-options-area"></div>
-    </div>
+<div id="admin-ui-vote" style="display:none;">
+    <label class="admin-label">投票截止時間</label>
+    <input type="datetime-local" id="admin-deadline">
+    
+    <label class="admin-label">正式場次預計人數 (選填)</label>
+    <input type="number" id="admin-vote-max" placeholder="例如：12">
 
-    <button class="btn btn-accent" onclick="addNewEvent()">確認發布</button>
+    <label class="admin-label">注意事項 / 預計課表 (切換後會保留)</label>
+    <textarea id="admin-vote-desc" rows="3" placeholder="例如：當天會練習攔網，請帶乾淨球鞋..."></textarea>
+
+    <label class="admin-label">選項數量 (最多10個)</label>
+    <select id="admin-vote-count" onchange="renderVoteInputs()">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4" selected>4</option><option value="5">5</option><option value="10">10</option>
+    </select>
+    <div id="admin-vote-options-area"></div>
 </div>
 
 <div id="reg-overlay" class="overlay">
@@ -413,7 +415,7 @@
     // 2. 修改  函數：修正過濾邏輯
     function createVoteCard(ev, allVotes) {
         const id = String(ev.event_id).trim();
-        const opts = ev.desc ? ev.desc.split(',').map(o => o.trim()).filter(o => o !== "") : [];
+        const opts = ev.options ? ev.options.split(',').map(o => o.trim()).filter(o => o !== "") : [];
         const safeVotes = Array.isArray(allVotes) ? allVotes : [];
         const evVotes = safeVotes.filter(v => String(v[0]).trim() === id);
         const d = new Date(ev.date);
@@ -538,6 +540,7 @@
         let maxVal = 0;
         let dateVal = "";
         let descVal = "";
+        let optionsVal = "";
     
         if (mode === 'active') {
             maxVal = parseInt(document.getElementById('admin-max').value) || 0;
@@ -554,14 +557,15 @@
         }
     
         sendData({
-            type: 'createEvent',
-            event_id: 'E' + Date.now(),
-            title: title,
-            date: dateVal,
-            max: maxVal,
-            desc: descVal,
-            status: mode
-        });
+                type: 'createEvent',
+                event_id: 'E' + Date.now(),
+                title: title,
+                date: dateVal,
+                max: maxVal,
+                desc: descVal,      // 存入試算表 Desc 欄位
+                options: optionsVal, // 存入試算表 Options 欄位
+                status: mode
+            });
     }
 
     // --- 以下為原本功能邏輯 (保持不動) ---

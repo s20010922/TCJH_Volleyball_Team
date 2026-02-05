@@ -509,43 +509,78 @@
     
     // 3. 修改報名卡片函數 (對應物件格式)
     function createCard(ev, allRegs, isPast) {
-        const id = ev.event_id;
-        const eventRegs = allRegs ? allRegs.filter(r => String(r[0]) === String(id)) : [];
-        const count = eventRegs.length;
-        
-        // --- 修改時間格式化邏輯 ---
-        const d = new Date(ev.date);
-        const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-        const formattedDate = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} (${dayNames[d.getDay()]}) ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-        // ------------------------
+            const id = ev.event_id;
+            
+            // --- 修改時間格式化邏輯 ---
+            const d = new Date(ev.date);
+            const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+            const formattedDate = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} (${dayNames[d.getDay()]}) ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 區分顯示邏輯：歷史場次 vs 進行中場次
+            let contentHtml = '';
+            let badgeHtml = '';
+            let progressHtml = '';
     
-        const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
-        const progress = Math.min((count / ev.max) * 100, 100);
-        
-        return `
-            <div class="card ${isPast ? 'card-past' : ''}">
-                <div class="card-title">${ev.title}</div>
-                <div class="card-date">📅 ${formattedDate}</div>
-                <div class="card-desc">${ev.desc}</div>
-                <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span>報名進度</span>
-                    <span>${count} / ${ev.max} 人</span>
-                </div>
-                <div style="background:#edf2f7; height:10px; border-radius:5px; margin-bottom:10px; overflow:hidden;">
-                    <div style="width:${progress}%; height:100%; background:${count>=ev.max?'var(--danger)':'var(--secondary)'}; transition:width 0.8s ease-out;"></div>
-                </div>
-                <div class="ball-count-badge">🏐 當前全隊總球數：${totalBalls}</div>
-                <div class="reg-area">
-                    ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
-                </div>
+            if (isPast || ev.isArchived) {
+                // --- A. 歷史場次顯示邏輯 ---
+                // 歷史名單現在存在 ev.options 裡面 (字串: "王小明, 李大同")
+                const memberString = ev.options || ""; 
+                const memberList = memberString ? memberString.split(',') : [];
+                const count = memberList.length;
+    
+                badgeHtml = `<div class="ball-count-badge" style="background:#edf2f7; color:var(--gray); border-color:#cbd5e0;">🏁 活動已結束，共 ${count} 人參與</div>`;
                 
-                <div class="card-actions" style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
-                    ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${ev.title}')">立即報名</button>`}
-                    ${!isPast ? `<button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancel('${id}')">取消我的報名</button>` : ''}
-                    ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
-                </div>
-            </div>`;
-    }
+                // 產生簡單的名單列表
+                const memberItems = memberList.map(m => 
+                    `<div class="reg-item" style="color:#718096;"><span>👤 ${m.trim()}</span></div>`
+                ).join('');
+                
+                contentHtml = `
+                    <div class="reg-area" style="background:#f7fafc;">
+                        ${memberItems || '<div style="text-align:center; color:var(--gray); padding:10px;">無出席紀錄</div>'}
+                    </div>`;
+    
+            } else {
+                // --- B. 進行中場次顯示邏輯 (維持原本) ---
+                const eventRegs = allRegs ? allRegs.filter(r => String(r[0]) === String(id)) : [];
+                const count = eventRegs.length;
+                const totalBalls = eventRegs.reduce((sum, r) => sum + (parseInt(r[2]) || 0), 0);
+                const progress = Math.min((count / ev.max) * 100, 100);
+    
+                progressHtml = `
+                    <div style="font-size:0.85rem; font-weight:700; display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>報名進度</span>
+                        <span>${count} / ${ev.max} 人</span>
+                    </div>
+                    <div style="background:#edf2f7; height:10px; border-radius:5px; margin-bottom:10px; overflow:hidden;">
+                        <div style="width:${progress}%; height:100%; background:${count>=ev.max?'var(--danger)':'var(--secondary)'}; transition:width 0.8s ease-out;"></div>
+                    </div>`;
+    
+                badgeHtml = `<div class="ball-count-badge">🏐 當前全隊總球數：${totalBalls}</div>`;
+                
+                contentHtml = `
+                    <div class="reg-area">
+                        ${eventRegs.map(r => `<div class="reg-item"><span>👤 ${r[1]}</span><span style="color:var(--secondary);">${r[2]} 球</span></div>`).join('') || '<div style="text-align:center; color:var(--gray); padding:10px;">尚未有人報名</div>'}
+                    </div>`;
+            }
+            
+            return `
+                <div class="card ${isPast ? 'card-past' : ''}">
+                    <div class="card-title">${ev.title}</div>
+                    <div class="card-date">📅 ${formattedDate}</div>
+                    <div class="card-desc">${ev.desc}</div>
+                    
+                    ${progressHtml}
+                    ${badgeHtml}
+                    ${contentHtml}
+                    
+                    <div class="card-actions" style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
+                        ${isPast ? '' : `<button class="btn btn-accent" onclick="openReg('${id}', '${ev.title}')">立即報名</button>`}
+                        ${!isPast ? `<button class="btn" style="background:#f1f5f9; color:var(--gray); font-size:0.9rem;" onclick="openCancel('${id}')">取消我的報名</button>` : ''}
+                        ${isAdminMode ? `<button class="btn" style="background:#fff; color:var(--danger); border:1.5px solid #fed7d7; font-size:0.9rem; margin-top:5px;" onclick="deleteEvent('${id}')">🗑️ 刪除此場次</button>` : ''}
+                    </div>
+                </div>`;
+        }
 
     function openVote(id, title, choice) {
         document.getElementById('vote-event-id').value = id;

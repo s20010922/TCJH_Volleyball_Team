@@ -143,9 +143,31 @@
         .btn-accent { background: var(--accent); color: var(--primary); box-shadow: 0 4px 0 #d69e2e; margin-bottom: 4px; }
         .btn-accent:active { transform: translateY(3px); box-shadow: 0 1px 0 #d69e2e; }
         
-        .overlay { position: fixed; inset: 0; background: var(--white); z-index: 2000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
-        input, textarea, select { font-family: inherit; width: 100%; padding: 14px; border: 2px solid #edf2f7; border-radius: 12px; margin-bottom: 12px; font-size: 1rem; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--accent); background: #fffaf0; }
+        .overlay { 
+            position: fixed; inset: 0; background: var(--white); z-index: 2000; 
+            padding: 20px; /* 縮小內距，讓內容更寬 */
+            display: none; flex-direction: column; overflow-y: auto; 
+        }
+        input, textarea, select { 
+            font-family: inherit; 
+            width: 100%; 
+            display: block; /* ★ 關鍵：強制佔滿整行 */
+            padding: 14px; 
+            border: 2px solid #edf2f7; 
+            border-radius: 12px; 
+            margin-bottom: 15px; /* 增加間距 */
+            font-size: 1rem; 
+            outline: none; 
+            transition: 0.2s; 
+            box-sizing: border-box; /* ★ 關鍵：確保內距不影響寬度 */
+        }
+        
+        /* 建議順便加上這個對焦效果，體驗會更好 */
+        input:focus, textarea:focus, select:focus { 
+            border-color: var(--accent); 
+            background: #fffaf0; 
+            box-shadow: 0 0 0 3px rgba(246, 173, 85, 0.1); 
+        }
         .admin-label { font-size: 0.85rem; font-weight: 800; color: var(--secondary); margin: 5px 0; display: block; }
         .poll-option-clean:active {
             background-color: #fffaf0 !important;
@@ -662,7 +684,10 @@
 
     // --- 以下為原本功能邏輯 (保持不動) ---
     function toggleDrawer(open) { document.getElementById('drawer').classList.toggle('open', open); document.getElementById('drawer-overlay').classList.toggle('open', open); }
-    function showInstruction() { toggleDrawer(false); alert("【使用說明】\n1. 點擊「立即報名」填寫資料。\n2. 點擊投票項目的「進度條」即可參與投票。\n3. 若需取消，請點擊場次下方的取消連結。"); }
+    function showInstruction() { 
+        toggleDrawer(false); 
+        alert("【使用說明】\n1. 報名：點擊「立即報名」，填寫姓名與球數 (0~10)。\n2. 投票：直接點擊選項「進度條」即可投票。\n3. 管理：若需取消或重投，請使用卡片下方的撤回/取消按鈕。\n4. 紀錄：過期場次將自動移至最下方的歷史區，並顯示出席名單。"); 
+    }
     function checkAdmin() { toggleDrawer(false); if(isAdminMode) return showCreate(); const p = prompt("請輸入管理密碼"); if(p) { currentAdminPwd = p; sendData({type:'verify'}); } }
     function updateUIForAdmin() { document.getElementById('drawer-admin-tools').innerHTML = `<div class="drawer-item" onclick="showCreate()" style="background:#fff5f5; color:var(--danger);">⚒️ 進入管理模式</div><div class="drawer-item" onclick="logout()">🚪 登出管理員</div>`; }
     function logout() { sessionStorage.removeItem('admin_pwd'); location.reload(); }

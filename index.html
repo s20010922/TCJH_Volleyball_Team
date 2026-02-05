@@ -472,7 +472,7 @@
                     // 格式化顯示選項（如果是日期就轉成 MM/DD，否則顯示原文字）
                     const optDate = new Date(targetOption);
                     const displayOpt = !isNaN(optDate.getTime()) 
-                        ? `${optDate.getMonth() + 1}/${optDate.getDate()}` 
+                        ? `${optDate.getFullYear()}-${(optDate.getMonth() + 1).toString().padStart(2, '0')}-${optDate.getDate().toString().padStart(2, '0')} ${optDate.getHours()}:${optDate.getMinutes().toString().padStart(2, '0')}`
                         : targetOption;
                     // ----------------------------
         
